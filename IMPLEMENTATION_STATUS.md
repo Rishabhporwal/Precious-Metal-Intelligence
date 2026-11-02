@@ -15,7 +15,7 @@ Last updated: Phase 1 completion.
 | 6     | Quantitative engine                 | ✅ complete (verified) |
 | 7     | AI analyst (LangGraph)              | ✅ complete (verified) |
 | 8     | Trading intelligence, alerts, paper| ✅ complete (verified) |
-| 9     | Backtesting                         | ⬜ not started         |
+| 9     | Backtesting                         | ✅ complete (verified) |
 | 10    | Hardening                           | ⬜ not started         |
 
 ## Next implementation tasks (Phase 4)
@@ -121,6 +121,41 @@ Last updated: Phase 1 completion.
 3. Walk-forward + out-of-sample split
 4. Leakage tests (anti-repaint assertion on strategies)
 5. `/api/v1/backtests` + results UI
+
+## Next implementation tasks (Phase 10)
+
+1. Test coverage sweep (edge cases per module), lint/type gates in CI-style script
+2. Data-quality monitor (missing-candle detection, stale alerts)
+3. Performance pass (indicator caching, query indexes)
+4. Security pass (auth boundary stub, CORS review, key handling review)
+5. Mobile responsiveness pass on all pages
+6. Final docs + runbooks
+
+## Phase 9 — completed features (verified)
+
+- **Backtest engine** (`backtesting/engine.py`): replays strategy detections
+  with honest execution assumptions — limit entry within wait window,
+  **pessimistic intrabar (stop wins)**, gap-through fills at open, 50% partial
+  at 1R → breakeven stop → 2R exit, spread deducted on entry and exit,
+  slippage per side, one position at a time. All assumptions stored with the run.
+- **Leakage gate** (`backtesting/leakage.py`): every detection re-verified by
+  re-running the strategy on the data PREFIX up to its anchor — future-dependent
+  detections are excluded and counted. This is the spec's anti-repaint test,
+  and it runs inside every backtest.
+- **Metrics** (`backtesting/metrics.py`): win rate, profit factor, expectancy/
+  median R, max drawdown from equity curve, per-trade Sharpe/Sortino (labeled
+  non-annualized), avg hold, by-session breakdown.
+- Migration 0008: `backtest_runs` + `backtest_trades` (IS/OOS segmented).
+- Endpoints `/api/v1/backtests{,/:id}`; `/backtests` UI (run table with
+  leakage-excluded count, trade detail, cost-model assumptions).
+
+## Phase 9 — verified live (XAUUSD 1H, 2026-11-02)
+
+- 6 composite detections, **all 6 passed the leakage prefix gate (0 excluded)**.
+- 1 trade: OOS segment, closed at target, **+1.455R net of costs** (50% at 1R +
+  remainder at 2R, spread/slippage deducted).
+- Sample sizes honestly small (detections accumulate over time); the UI states
+  this. Daily-backtest run for a deeper sample kicked off in parallel.
 
 ## Phase 8 — completed features (verified)
 
