@@ -6,6 +6,8 @@ WORKDIR /engine
 
 COPY services/quant-engine/pyproject.toml ./
 COPY services/quant-engine/app ./app
+COPY services/quant-engine/providers ./providers
+COPY services/quant-engine/ingestion ./ingestion
 RUN pip install --no-cache-dir . \
     && chown -R appuser:appuser /engine
 

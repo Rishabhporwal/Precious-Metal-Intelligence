@@ -1,5 +1,6 @@
 import Fastify, { type FastifyInstance } from "fastify";
 import { registerHealthRoutes } from "./routes/health.js";
+import { registerMarketRoutes } from "./routes/markets.js";
 import { loadConfig, type AppConfig } from "./config.js";
 
 export function buildApp(config: AppConfig = loadConfig()): FastifyInstance {
@@ -16,6 +17,7 @@ export function buildApp(config: AppConfig = loadConfig()): FastifyInstance {
   app.decorate("config", config);
 
   registerHealthRoutes(app);
+  registerMarketRoutes(app);
 
   return app;
 }

@@ -72,6 +72,7 @@ services:
       PORT: 8001
       DATABASE_URL: ${DATABASE_URL}
       REDIS_URL: ${REDIS_URL}
+      TWELVEDATA_API_KEY: ${TWELVEDATA_API_KEY}
     ports:
       - "${QUANT_PORT:-8001}:8001"
     depends_on:
@@ -85,6 +86,27 @@ services:
       timeout: 5s
       retries: 5
       start_period: 20s
+    restart: unless-stopped
+
+  ingestion:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/quant.Dockerfile
+    container_name: pmi-ingestion
+    command: ["python", "-m", "ingestion"]
+    environment:
+      ENV: production
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_URL: ${REDIS_URL}
+      TWELVEDATA_API_KEY: ${TWELVEDATA_API_KEY}
+      QUOTE_POLL_SECONDS: ${QUOTE_POLL_SECONDS:-300}
+      MIN_CANDLE_POLL_SECONDS: ${MIN_CANDLE_POLL_SECONDS:-900}
+      BACKFILL_OUTPUTSIZE: ${BACKFILL_OUTPUTSIZE:-5000}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      quant:
+        condition: service_healthy
     restart: unless-stopped
 
   web:

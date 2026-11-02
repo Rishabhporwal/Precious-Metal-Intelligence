@@ -104,8 +104,13 @@ export default function Home() {
 
         <footer className="mt-8 border-t border-neutral-800 pt-4 text-[11px] leading-relaxed text-neutral-600">
           <p>
-            No market data is served yet — provider integrations (Twelve Data, FRED, CFTC) begin in
-            Phase 1. No mock data exists in this system.
+            <a className="text-neutral-400 underline" href="/markets">
+              Markets →
+            </a>{" "}
+            live ingested market data
+          </p>
+          <p className="mt-1">
+            Market data: real Twelve Data ingestion (Phase 1) — no mock data exists in this system.
           </p>
           <p className="mt-1">
             Health JSON:{" "}

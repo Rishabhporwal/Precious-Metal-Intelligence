@@ -15,6 +15,7 @@ dependencies = [
     "alembic>=1.14",
     "sqlalchemy>=2.0",
     "psycopg[binary]>=3.2",
+    "psycopg-pool>=3.2",
     "redis>=5.2",
     "httpx>=0.28",
 ]
@@ -27,7 +28,7 @@ dev = [
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["app"]
+packages = ["app", "providers", "ingestion"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
@@ -36,3 +37,7 @@ testpaths = ["tests"]
 [tool.ruff]
 line-length = 100
 target-version = "py312"
+
+[tool.ruff.lint]
+# B008: FastAPI's Query/Depends-in-defaults idiom is intentional here.
+ignore = ["B008"]
