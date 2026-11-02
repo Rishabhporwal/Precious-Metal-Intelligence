@@ -140,7 +140,6 @@ def run_backtest(
 
         # manage position
         entry_fill = entry_price + sign * costs["spread"] + sign * costs["slippage"]
-        adj_stop = stop - sign * costs["slippage"]
         effective_stop = stop
         realized_r = 0.0
         half_done = False

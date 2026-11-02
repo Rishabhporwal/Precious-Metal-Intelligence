@@ -108,9 +108,8 @@ def evaluate_price_rules() -> int:
             hit = (rule["kind"] == "price_above" and price >= level) or (
                 rule["kind"] == "price_below" and price <= level
             )
-            if hit:
-                if fire(rule, f"XAUUSD {'≥' if rule['kind'] == 'price_above' else '≤'} {label}: now {price:.2f}"):
-                    fired += 1
+            if hit and fire(rule, f"XAUUSD {'≥' if rule['kind'] == 'price_above' else '≤'} {label}: now {price:.2f}"):
+                fired += 1
     return fired
 
 
