@@ -58,7 +58,6 @@ def scenario_report(closes: list[float]) -> dict:
             buckets.setdefault(b, []).append(i)
 
     current_bucket = _bucket(r[-1], vp[-1])
-    current_idx = n - 1
 
     stats = {}
     for horizon in FORWARD_HORIZONS:

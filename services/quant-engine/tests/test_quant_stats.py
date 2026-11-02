@@ -2,7 +2,7 @@
 
 from datetime import date, datetime
 
-import pytest  # noqa: F401
+import pytest
 
 from quant import correlations as corr
 from quant import regimes as reg
@@ -52,7 +52,7 @@ def test_scenario_buckets_and_stats():
     assert rep["history_years"] > 2
     assert "current_bucket" in rep
     # forward stats include n and median
-    for horizon, s in rep["bucket_history"].items():
+    for s in rep["bucket_history"].values():
         assert s["n"] > 0
         assert "median_pct" in s and "up_rate" in s
 

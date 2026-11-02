@@ -38,6 +38,7 @@ MACRO_INTERVAL = int(os.environ.get("MACRO_INTERVAL_SECONDS", str(6 * 3600)))
 CALENDAR_INTERVAL = int(os.environ.get("CALENDAR_INTERVAL_SECONDS", str(12 * 3600)))
 CFTC_INTERVAL = int(os.environ.get("CFTC_INTERVAL_SECONDS", str(12 * 3600)))
 NEWS_INTERVAL = int(os.environ.get("NEWS_INTERVAL_SECONDS", "1800"))
+ANALYSIS_INTERVAL = int(os.environ.get("ANALYSIS_INTERVAL_SECONDS", str(12 * 3600)))
 
 
 def sync_macro(fred: FredProvider) -> None:
@@ -82,6 +83,27 @@ def sync_news() -> None:
     logger.info("news sync: %d articles fetched, %d new rows", len(articles), written)
 
 
+def sync_analysis() -> None:
+    """Daily AI analyst run + news classification (LLM, cached)."""
+    import asyncio
+
+    from ai import graph as analyst_graph
+
+    async def _run():
+        result = await analyst_graph.run_analysis("XAUUSD", "1day")
+        logger.info("analysis: status=%s cache=%s", result.get("status"),
+                    (result.get("llm_meta") or {}).get("cache_hit"))
+        try:
+            from app.api.analyst import classify_news
+
+            cls = await classify_news(limit=30)
+            logger.info("news classification: %s", cls)
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("news classification skipped: %s", exc)
+
+    asyncio.run(_run())
+
+
 def run() -> None:
     logger.info("scheduler starting (macro %ss / calendar %ss / cftc %ss / news %ss)",
                 MACRO_INTERVAL, CALENDAR_INTERVAL, CFTC_INTERVAL, NEWS_INTERVAL)
@@ -100,6 +122,7 @@ def run() -> None:
     last["cftc"] = time.monotonic()
     sync_news()
     last["news"] = time.monotonic()
+    sync_analysis()
 
     while True:
         time.sleep(30)
@@ -117,8 +140,11 @@ def run() -> None:
             if now - last["news"] >= NEWS_INTERVAL:
                 sync_news()
                 last["news"] = now
-        except Exception as exc:
-            logger.exception("scheduler cycle failed: %s", exc)
+            if now - last.get("analysis", 0) >= ANALYSIS_INTERVAL:
+                sync_analysis()
+                last["analysis"] = now
+        except Exception:
+            logger.exception("scheduler cycle failed")
 
 
 if __name__ == "__main__":

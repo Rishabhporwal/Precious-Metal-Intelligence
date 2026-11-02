@@ -104,7 +104,7 @@ class FredProvider:
     def fetch_all_observations(self) -> list[dict]:
         """Fetch latest observations for the whole watchlist. Returns rows ready to store."""
         rows = []
-        for series_id, _title in SERIES_WATCHLIST.items():
+        for series_id in SERIES_WATCHLIST:
             try:
                 meta = self.series_meta(series_id)
                 obs = self.latest_observations(series_id, limit=14)

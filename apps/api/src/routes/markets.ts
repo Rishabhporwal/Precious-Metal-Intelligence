@@ -168,6 +168,53 @@ export async function registerMarketRoutes(app: FastifyInstance): Promise<void> 
     return reply.code(result.statusCode).send(result.body);
   });
 
+  app.post("/api/v1/analysis/generate", async (request, reply) => {
+    try {
+      const body = (request.body ?? {}) as { symbol?: string; interval?: string };
+      const symbol = (body.symbol ?? "XAUUSD").toUpperCase();
+      if (!SYMBOL_RE.test(symbol)) {
+        return reply.code(400).send({
+          error: { code: "INVALID_SYMBOL", message: "symbol must be 3-8 uppercase letters" },
+        } satisfies ApiErrorResponse);
+      }
+      const res = await fetch(`${app.config.quantInternalUrl}/v1/analysis/generate`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ symbol, interval: body.interval ?? "1day" }),
+        signal: AbortSignal.timeout(120000),
+      });
+      const payload = await res.json().catch(() => null);
+      return reply.code(res.ok ? 200 : res.status).send(payload);
+    } catch (err) {
+      app.log.error({ err }, "analysis generation failed");
+      return reply.code(502).send({
+        error: { code: "UPSTREAM_ERROR", message: "analysis generation failed" },
+      } satisfies ApiErrorResponse);
+    }
+  });
+
+  app.get<{ Params: { symbol?: string } }>("/api/v1/analysis/latest/:symbol", async (request, reply) => {
+    const symbol = (request.params.symbol ?? "").toUpperCase();
+    if (!SYMBOL_RE.test(symbol)) {
+      return reply.code(400).send({
+        error: { code: "INVALID_SYMBOL", message: "symbol must be 3-8 uppercase letters" },
+      } satisfies ApiErrorResponse);
+    }
+    const result = await proxy(app, `/v1/analysis/latest/${symbol}`);
+    return reply.code(result.statusCode).send(result.body);
+  });
+
+  app.get<{ Params: { symbol?: string } }>("/api/v1/analysis/history/:symbol", async (request, reply) => {
+    const symbol = (request.params.symbol ?? "").toUpperCase();
+    if (!SYMBOL_RE.test(symbol)) {
+      return reply.code(400).send({
+        error: { code: "INVALID_SYMBOL", message: "symbol must be 3-8 uppercase letters" },
+      } satisfies ApiErrorResponse);
+    }
+    const result = await proxy(app, `/v1/analysis/history/${symbol}`);
+    return reply.code(result.statusCode).send(result.body);
+  });
+
   app.post("/api/v1/strategies/evaluate", async (request, reply) => {
     try {
       const body = (request.body ?? {}) as { symbol?: string; intervals?: string[] };

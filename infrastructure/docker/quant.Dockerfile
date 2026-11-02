@@ -12,6 +12,7 @@ COPY services/quant-engine/indicators ./indicators
 COPY services/quant-engine/strategies ./strategies
 COPY services/quant-engine/scheduler ./scheduler
 COPY services/quant-engine/quant ./quant
+COPY services/quant-engine/ai ./ai
 RUN pip install --no-cache-dir . \
     && chown -R appuser:appuser /engine
 

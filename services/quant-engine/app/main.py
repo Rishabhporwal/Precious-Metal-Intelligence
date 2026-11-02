@@ -2,7 +2,7 @@ import redis.asyncio as aioredis
 from fastapi import FastAPI
 from pydantic import BaseModel
 
-from .api import macro, market_data, quant_stats, strategies, technical
+from .api import analyst, macro, market_data, quant_stats, strategies, technical
 from .config import get_settings
 
 app = FastAPI(title="PMI Quant Engine", version="0.1.0")
@@ -14,6 +14,7 @@ app.include_router(technical.router)
 app.include_router(strategies.router)
 app.include_router(macro.router)
 app.include_router(quant_stats.router)
+app.include_router(analyst.router)
 
 
 class DependencyStatus(BaseModel):
