@@ -3,6 +3,7 @@ import Link from "next/link";
 import { GoldChart } from "@/components/GoldChart";
 import { LiveTicker } from "@/components/LiveTicker";
 import { AnalyticsData, AnalyticsSkeleton } from "@/components/AnalyticsPanel";
+import { QuantData, QuantSkeleton } from "@/components/QuantPanel";
 
 const API_INTERNAL_URL = process.env.API_INTERNAL_URL ?? "http://localhost:8000";
 
@@ -117,6 +118,9 @@ export default function DashboardPage() {
           <GoldChart initialInterval="1day" />
           <Suspense fallback={<AnalyticsSkeleton />}>
             <AnalyticsData />
+          </Suspense>
+          <Suspense fallback={<QuantSkeleton />}>
+            <QuantData />
           </Suspense>
           <Suspense fallback={<FreshnessSkeleton />}>
             <FreshnessPanel />

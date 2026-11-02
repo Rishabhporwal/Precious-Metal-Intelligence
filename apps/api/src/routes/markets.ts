@@ -111,6 +111,20 @@ export async function registerMarketRoutes(app: FastifyInstance): Promise<void> 
     },
   );
 
+  app.get<{ Params: { symbol?: string } }>(
+    "/api/v1/markets/:symbol/quant",
+    async (request, reply) => {
+      const symbol = (request.params.symbol ?? "").toUpperCase();
+      if (!SYMBOL_RE.test(symbol)) {
+        return reply.code(400).send({
+          error: { code: "INVALID_SYMBOL", message: "symbol must be 3-8 uppercase letters" },
+        } satisfies ApiErrorResponse);
+      }
+      const result = await proxy(app, `/v1/instruments/${symbol}/quant`);
+      return reply.code(result.statusCode).send(result.body);
+    },
+  );
+
   app.get("/api/v1/strategies", async (_request, reply) => {
     const result = await proxy(app, "/v1/strategies");
     return reply.code(result.statusCode).send(result.body);
