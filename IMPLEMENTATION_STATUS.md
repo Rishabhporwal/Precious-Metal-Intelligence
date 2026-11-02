@@ -9,7 +9,7 @@ Last updated: Phase 1 completion.
 | 0     | Platform bootstrap                  | ✅ complete (verified) |
 | 1     | Market data (Twelve Data, backfill) | ✅ complete (verified) |
 | 2     | Dashboard                           | ✅ complete (verified) |
-| 3     | Technical analysis                  | ⬜ not started         |
+| 3     | Technical analysis                  | ✅ complete (verified) |
 | 4     | Advanced strategies (SMC/ICT/…)     | ⬜ not started         |
 | 5     | Macro & news                        | ⬜ not started         |
 | 6     | Quantitative engine                 | ⬜ not started         |
@@ -17,6 +17,40 @@ Last updated: Phase 1 completion.
 | 8     | Trading intelligence, alerts, paper | ⬜ not started         |
 | 9     | Backtesting                         | ⬜ not started         |
 | 10    | Hardening                           | ⬜ not started         |
+
+## Next implementation tasks (Phase 4)
+
+1. Strategy framework: base.py + registry + engine (deterministic detection records, algo versions)
+2. P0 SMC/ICT strategies: Liquidity Sweep, EQH/EQL, BOS/CHoCH/MSS events, FVG, Order Blocks,
+   Breaker Blocks, Displacement, Premium/Discount, PDH/PDL, Asian Range, SMT (needs silver —
+   decide proxy or defer), Fib/OTE, Failed Breakout, Wyckoff Spring/Upthrust
+3. Confluence engine for the first composite: Sweep → MSS → Displacement → FVG → OB
+4. Strategy detection persistence (migration 0003) + `/v1/strategies/*` endpoints
+5. Chart annotations for detections
+
+## Phase 3 — completed features (verified)
+
+- `indicators/` pure-Python deterministic library: EMA/SMA/RSI(Wilder)/MACD/
+  Stochastic/ROC/ATR(Wilder)/ADX(±DI)/Bollinger/HV/RV/vol-percentile + regular
+  divergence detection. No-lookahead enforced and **tested** (prefix-invariance).
+- `indicators/structure.py`: k-bar confirmation-delayed swings (repaint-free by
+  construction), HH/HL/LH/LL labels, S/R clustering with touch counts, BOS/CHoCH
+  state machine over confirmed swings + closed candles, PDH/PDL (last completed
+  daily), PWH/PWL (ISO weeks, running week skipped), UTC session ranges,
+  multi-timeframe EMA-alignment+ADX trend.
+- Endpoints: `/v1/instruments/{symbol}/indicators` and `/structure` (quant),
+  `/api/v1/markets/{symbol}/indicators|structure` (gateway).
+- Dashboard: toggleable EMA 20/50/200 chart overlays + three analytics panels
+  (daily momentum, market structure with PDH/PDL/S/R/BOS/CHoCH, MTF trend).
+
+## Phase 3 — verified on live gold data (2026-11-02)
+
+- Daily: RSI 32.7, MACD −12.2, ADX 32.7 with −DI dominant (33.4 vs 16.5) →
+  coherent downtrend read; bullish MACD divergences flagged.
+- 1H structure: trend UP after **CHoCH bullish @ 3,875.5**; PDH/PDL 3,915.0/3,866.0;
+  PWH/PWL 4,082.0/3,871.2; S/R levels clustered with touch counts.
+- MTF: 1h sideways-strong (ADX 72), 1day down-strong (ADX 32.7).
+- Session ranges flat = Sunday (Nov 1) — correct market reality, not a bug.
 
 ## Phase 1 — completed features
 
