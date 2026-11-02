@@ -50,12 +50,14 @@ async function checkRedis(redisUrl: string | undefined): Promise<DependencyStatu
   }
 }
 
+const SERVICE_VERSION = "0.1.0";
+
 export async function registerHealthRoutes(app: FastifyInstance): Promise<void> {
   // Liveness: process is running. Must not fail on dependency problems.
   app.get("/healthz", async () => ({
     status: "ok",
     service: "pmi-api",
-    version: process.env.npm_package_version ?? "0.0.0",
+    version: SERVICE_VERSION,
     uptimeSec: Math.round(process.uptime()),
   }));
 

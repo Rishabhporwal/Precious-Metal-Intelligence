@@ -44,6 +44,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@pmi/contracts':
+        specifier: workspace:*
+        version: link:../../packages/contracts
       next:
         specifier: 16.4.3
         version: 16.4.3(@babel/core@7.29.7)(@types/node@20.19.43)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)

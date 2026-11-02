@@ -95,6 +95,8 @@ services:
     environment:
       NODE_ENV: production
       NEXT_PUBLIC_API_URL: http://localhost:${API_PORT:-8000}
+      API_INTERNAL_URL: http://api:8000
+      QUANT_INTERNAL_URL: http://quant:8001
     ports:
       - "${WEB_PORT:-3100}:3000"
     depends_on:
