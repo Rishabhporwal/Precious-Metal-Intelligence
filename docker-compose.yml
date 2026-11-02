@@ -1,0 +1,110 @@
+name: precious-metals-intelligence
+
+services:
+  postgres:
+    image: timescale/timescaledb:2.17.2-pg16
+    container_name: pmi-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-pmi}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-change_me_in_real_env}
+      POSTGRES_DB: ${POSTGRES_DB:-pmi}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-pmi} -d ${POSTGRES_DB:-pmi}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  redis:
+    image: redis:7.4-alpine
+    container_name: pmi-redis
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  api:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/api.Dockerfile
+    container_name: pmi-api
+    environment:
+      NODE_ENV: production
+      PORT: 8000
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_URL: ${REDIS_URL}
+      QUANT_INTERNAL_URL: http://quant:8001
+    ports:
+      - "${API_PORT:-8000}:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      quant:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:8000/healthz').then(r=>{if(!r.ok)throw 0}).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    restart: unless-stopped
+
+  quant:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/quant.Dockerfile
+    container_name: pmi-quant
+    environment:
+      ENV: production
+      PORT: 8001
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_URL: ${REDIS_URL}
+    ports:
+      - "${QUANT_PORT:-8001}:8001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; urllib.request.urlopen('http://localhost:8001/health', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/web.Dockerfile
+    container_name: pmi-web
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: http://localhost:${API_PORT:-8000}
+    ports:
+      - "${WEB_PORT:-3100}:3000"
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # ingestion / scheduler containers are introduced in Phase 1 (market data)
+  # and Phase 5 (economic calendar / news polling). Reserved here by design.
+
+volumes:
+  pgdata:
+  redisdata:

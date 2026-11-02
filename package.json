@@ -1,0 +1,29 @@
+{
+  "name": "precious-metals-intelligence",
+  "version": "0.1.0",
+  "private": true,
+  "description": "AI-powered Gold & Silver market intelligence platform (monorepo)",
+  "packageManager": "pnpm@10.17.0",
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "sharp",
+      "unrs-resolver",
+      "@tailwindcss/oxide",
+      "@swc/core"
+    ]
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev:web": "pnpm --filter @pmi/web dev -- --port 3100",
+    "dev:api": "pnpm --filter @pmi/api dev",
+    "dev:quant": "cd services/quant-engine && uv run uvicorn app.main:app --host 0.0.0.0 --port 8001 --reload",
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "test:quant": "cd services/quant-engine && uv run pytest -q",
+    "lint": "pnpm -r lint",
+    "migrate": "cd services/quant-engine && uv run alembic -c ../../database/alembic.ini upgrade head"
+  }
+}

@@ -1,0 +1,14 @@
+# Keep Docker build contexts small — images copy only what they need.
+.git
+**/node_modules
+**/.next
+**/dist
+**/__pycache__
+**/.venv
+**/.pytest_cache
+**/.ruff_cache
+.env
+.env.local
+*.log
+.DS_Store
+docs/
