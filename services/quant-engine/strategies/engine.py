@@ -147,7 +147,7 @@ def recent_detections(symbol: str, interval: str | None, limit: int = 50) -> lis
         params.append(limit)
         cur = conn.execute(
             f"""
-            SELECT d.strategy_id, d.algo_version, d.interval, d.direction, d.status,
+            SELECT d.id, d.strategy_id, d.algo_version, d.interval, d.direction, d.status,
                    d.anchor_time, d.levels, d.evidence
             FROM strategy_detections d
             WHERE {" AND ".join(clauses)}

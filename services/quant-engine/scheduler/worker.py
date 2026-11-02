@@ -39,6 +39,7 @@ CALENDAR_INTERVAL = int(os.environ.get("CALENDAR_INTERVAL_SECONDS", str(12 * 360
 CFTC_INTERVAL = int(os.environ.get("CFTC_INTERVAL_SECONDS", str(12 * 3600)))
 NEWS_INTERVAL = int(os.environ.get("NEWS_INTERVAL_SECONDS", "1800"))
 ANALYSIS_INTERVAL = int(os.environ.get("ANALYSIS_INTERVAL_SECONDS", str(12 * 3600)))
+TRADING_INTERVAL = int(os.environ.get("TRADING_INTERVAL_SECONDS", "120"))
 
 
 def sync_macro(fred: FredProvider) -> None:
@@ -104,6 +105,27 @@ def sync_analysis() -> None:
     asyncio.run(_run())
 
 
+def sync_trading() -> None:
+    """Paper-trade SL/TP monitoring, alert evaluation, setup evaluation (cheap, local)."""
+    from app import alerts, paper
+
+    closed = paper.monitor_open_trades()
+    alert_counts = alerts.evaluate_all()
+    setups = 0
+    try:
+        import httpx
+
+        r = httpx.post(
+            "http://localhost:8001/v1/strategies/evaluate_setups?symbol=XAUUSD&interval=1h",
+            timeout=60,
+        )
+        if r.status_code == 200:
+            setups = r.json().get("valid_created", 0)
+    except Exception as exc:  # noqa: BLE001
+        logger.debug("setup evaluation skipped: %s", exc)
+    logger.info("trading sync: closed=%s alerts=%s new_valid_setups=%s", closed, alert_counts, setups)
+
+
 def run() -> None:
     logger.info("scheduler starting (macro %ss / calendar %ss / cftc %ss / news %ss)",
                 MACRO_INTERVAL, CALENDAR_INTERVAL, CFTC_INTERVAL, NEWS_INTERVAL)
@@ -123,6 +145,8 @@ def run() -> None:
     sync_news()
     last["news"] = time.monotonic()
     sync_analysis()
+    paper.ensure_default_account()
+    last["trading"] = time.monotonic()
 
     while True:
         time.sleep(30)
@@ -143,6 +167,9 @@ def run() -> None:
             if now - last.get("analysis", 0) >= ANALYSIS_INTERVAL:
                 sync_analysis()
                 last["analysis"] = now
+            if now - last.get("trading", 0) >= TRADING_INTERVAL:
+                sync_trading()
+                last["trading"] = now
         except Exception:
             logger.exception("scheduler cycle failed")
 

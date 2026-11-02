@@ -215,6 +215,107 @@ export async function registerMarketRoutes(app: FastifyInstance): Promise<void> 
     return reply.code(result.statusCode).send(result.body);
   });
 
+  app.get("/api/v1/setups", async (_request, reply) => {
+    const result = await proxy(app, "/v1/setups");
+    return reply.code(result.statusCode).send(result.body);
+  });
+
+  app.post<{ Querystring: { symbol?: string; interval?: string } }>(
+    "/api/v1/strategies/evaluate_setups",
+    async (request, reply) => {
+      const symbol = ((request.query.symbol as string) ?? "XAUUSD").toUpperCase();
+      if (!SYMBOL_RE.test(symbol)) {
+        return reply.code(400).send({
+          error: { code: "INVALID_SYMBOL", message: "symbol must be 3-8 uppercase letters" },
+        } satisfies ApiErrorResponse);
+      }
+      const res = await fetch(
+        `${app.config.quantInternalUrl}/v1/strategies/evaluate_setups?symbol=${symbol}&interval=${request.query.interval ?? "1h"}`,
+        { method: "POST", signal: AbortSignal.timeout(60000) },
+      );
+      const payload = await res.json().catch(() => null);
+      return reply.code(res.ok ? 200 : res.status).send(payload);
+    },
+  );
+
+  app.get("/api/v1/alerts", async (_request, reply) => {
+    const result = await proxy(app, "/v1/alerts");
+    return reply.code(result.statusCode).send(result.body);
+  });
+
+  app.post("/api/v1/alerts", async (request, reply) => {
+    const res = await fetch(`${app.config.quantInternalUrl}/v1/alerts`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(request.body ?? {}),
+      signal: AbortSignal.timeout(15000),
+    });
+    const payload = await res.json().catch(() => null);
+    return reply.code(res.ok ? 200 : res.status).send(payload);
+  });
+
+  app.delete<{ Params: { id?: string } }>("/api/v1/alerts/:id", async (request, reply) => {
+    const result = await proxy(app, `/v1/alerts/${request.params.id}`);
+    return reply.code(result.statusCode).send(result.body);
+  });
+
+  app.post("/api/v1/alerts/evaluate", async (_request, reply) => {
+    const res = await fetch(`${app.config.quantInternalUrl}/v1/alerts/evaluate`, {
+      method: "POST",
+      signal: AbortSignal.timeout(30000),
+    });
+    const payload = await res.json().catch(() => null);
+    return reply.code(res.ok ? 200 : res.status).send(payload);
+  });
+
+  app.get("/api/v1/paper/accounts", async (_request, reply) => {
+    const result = await proxy(app, "/v1/paper/accounts");
+    return reply.code(result.statusCode).send(result.body);
+  });
+
+  app.post("/api/v1/paper/trades", async (request, reply) => {
+    const res = await fetch(`${app.config.quantInternalUrl}/v1/paper/trades`, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(request.body ?? {}),
+      signal: AbortSignal.timeout(15000),
+    });
+    const payload = await res.json().catch(() => null);
+    return reply.code(res.ok ? 200 : res.status).send(payload);
+  });
+
+  app.get<{ Querystring: { status?: string } }>("/api/v1/paper/trades", async (request, reply) => {
+    const result = await proxy(app, `/v1/paper/trades?status=${request.query.status ?? "all"}`);
+    return reply.code(result.statusCode).send(result.body);
+  });
+
+  app.post<{ Params: { id?: string }; Querystring: { reason?: string } }>(
+    "/api/v1/paper/trades/:id/close",
+    async (request, reply) => {
+      const id = parseInt(request.params.id ?? "0", 10);
+      if (!Number.isInteger(id) || id <= 0) {
+        return reply.code(400).send({
+          error: { code: "INVALID_ID", message: "trade id must be a positive integer" },
+        } satisfies ApiErrorResponse);
+      }
+      const res = await fetch(
+        `${app.config.quantInternalUrl}/v1/paper/trades/${id}/close?reason=${request.query.reason ?? "manual"}`,
+        { method: "POST", signal: AbortSignal.timeout(15000) },
+      );
+      const payload = await res.json().catch(() => null);
+      return reply.code(res.ok ? 200 : res.status).send(payload);
+    },
+  );
+
+  app.post("/api/v1/paper/monitor", async (_request, reply) => {
+    const res = await fetch(`${app.config.quantInternalUrl}/v1/paper/monitor`, {
+      method: "POST",
+      signal: AbortSignal.timeout(30000),
+    });
+    const payload = await res.json().catch(() => null);
+    return reply.code(res.ok ? 200 : res.status).send(payload);
+  });
+
   app.post("/api/v1/strategies/evaluate", async (request, reply) => {
     try {
       const body = (request.body ?? {}) as { symbol?: string; intervals?: string[] };
