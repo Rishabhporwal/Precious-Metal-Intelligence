@@ -144,8 +144,10 @@ def run() -> None:
     last["cftc"] = time.monotonic()
     sync_news()
     last["news"] = time.monotonic()
+    from app import paper as paper_mod
+
     sync_analysis()
-    paper.ensure_default_account()
+    paper_mod.ensure_default_account()
     last["trading"] = time.monotonic()
 
     while True:

@@ -82,5 +82,5 @@ def test_llm_output_with_invented_number_fails():
 
 def test_missing_scenario_direction_fails_schema():
     content = json.dumps({"summary": "x", "scenarios": [{"direction": "sideways", "narrative": "x"}]})
-    out, errors = validate_llm_output(content, EVIDENCE, RISK)
+    out, _errors = validate_llm_output(content, EVIDENCE, RISK)
     assert out is None

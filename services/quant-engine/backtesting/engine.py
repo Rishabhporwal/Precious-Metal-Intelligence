@@ -147,7 +147,7 @@ def run_backtest(
         exit_idx = None
         exit_reason = "expired"
         for j in range(entry_idx + 1, n):
-            o, h, l, c = ctx.opens[j], ctx.highs[j], ctx.lows[j], ctx.closes[j]
+            o, h, l = ctx.opens[j], ctx.highs[j], ctx.lows[j]
             stop_hit = (direction == "long" and (l <= effective_stop or o <= effective_stop)) or (
                 direction == "short" and (h >= effective_stop or o >= effective_stop)
             )

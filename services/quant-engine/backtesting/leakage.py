@@ -33,7 +33,6 @@ def verify_detection_prefix(
     if len(prefix) < 60:
         return False
     ctx = build_context(rows[0].get("symbol", "XAUUSD"), "1h", prefix, daily, hourly, params=params)
-    merged = {**(cls.default_params or {}), **(params or {})}
     try:
         dets = cls().detect(ctx)
     except Exception as exc:  # noqa: BLE001
