@@ -13,7 +13,7 @@ Last updated: Phase 1 completion.
 | 4     | Advanced strategies (SMC/ICT/…)     | ✅ complete (verified) |
 | 5     | Macro & news                        | ✅ complete (verified) |
 | 6     | Quantitative engine                 | ✅ complete (verified) |
-| 7     | AI analyst (LangGraph)              | ⬜ not started         |
+| 7     | AI analyst (LangGraph)              | ✅ complete (verified) |
 | 8     | Trading intelligence, alerts, paper | ⬜ not started         |
 | 9     | Backtesting                         | ⬜ not started         |
 | 10    | Hardening                           | ⬜ not started         |
@@ -105,6 +105,49 @@ Last updated: Phase 1 completion.
 4. Evidence reconciliation: scenarios + detections + macro + quant stats as evidence; LLM never emits numbers
 5. Analysis persistence (market_analyses + analysis_evidence migrations) + `/api/v1/analysis/*`
 6. News sentiment classification (fills `classified`/`sentiment` honestly)
+
+## Next implementation tasks (Phase 8)
+
+1. Contract specs per instrument + position sizing (1% risk rule, $1k capital context)
+2. Trade setup validation gate (stale data / invalid stop / min R-R / event-risk policy)
+3. Alert engine (price/structure/setup alerts, dedupe + cooldowns) + Telegram
+4. Paper trading engine (virtual accounts, fills, P&L) + migrations
+5. `/api/v1/setups` + `/api/v1/paper/*` endpoints + UI
+
+## Phase 7 — completed features (verified)
+
+- **LLM**: OpenRouter `deepseek/deepseek-chat` (chosen from 452 live models:
+  $0.26/M in, $1.03/M out; slug verified with a live call). **Redis response
+  cache** (12h TTL, HIT/MISS logged) + DB evidence-hash dedupe — verified:
+  identical prompt = cache HIT with zero spend; identical evidence = analysis
+  reused with zero LLM call.
+- **LangGraph**: snapshot → fan-out gatherers (technical / strategies / macro /
+  quant — all deterministic Python) → risk node (deterministic: ATR reference
+  stop distance, 48h high-impact event warnings, quote staleness) → **single
+  cached LLM synthesis** → validation → persist. Retry capped at 1.
+- **Number-containment guarantee**: every numeric literal in the LLM narrative
+  must exist in the evidence pack (tight tolerance; indicator-name numbers
+  stripped; small-int allowlist for counts/horizons). Violations → retry with
+  violation feedback → deterministic fallback flagged `deterministic_fallback`.
+- Migration 0006: `market_analyses` (append-only, model/prompt/evidence-hash
+  tracked) + `analysis_evidence`.
+- News classification: one batched cached call; conservative labels only.
+- Scheduler: analysis + classification every 12h.
+- UI `/analyst`: scenario cards (bullish/neutral/bearish) with evidence-key
+  citations, risk constraints, generate button.
+
+## Phase 7 — verified live (2026-11-02)
+
+- Validated LLM analysis persisted (status `llm`): 3 scenarios citing evidence
+  keys (choch_bullish, wyckoff_spring, COT net longs, declining DGS10/DFII10)
+  with only evidence-contained levels (3,915.02 / 3,875.53 / 3,866.02).
+- Cache HIT verified (call 2 = zero spend). News classification ran (4 articles).
+- Total LLM spend across all Phase 7 testing: **≈ $0.012**. Steady-state
+  projection: ~$0.01/day (analysis + classification at 12h cadence).
+- Real bugs fixed during verification: FastAPI `Query` default leaked into
+  direct route-function calls (graph gather node); LangGraph retry routing
+  (retry_count incremented before router check → never retried); status
+  varchar(16) too short for `deterministic_fallback`.
 
 ## Phase 6 — completed features (verified)
 
