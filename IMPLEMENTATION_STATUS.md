@@ -12,7 +12,7 @@ Last updated: Phase 1 completion.
 | 3     | Technical analysis                  | ✅ complete (verified) |
 | 4     | Advanced strategies (SMC/ICT/…)     | ✅ complete (verified) |
 | 5     | Macro & news                        | ✅ complete (verified) |
-| 6     | Quantitative engine                 | ⬜ not started         |
+| 6     | Quantitative engine                 | ✅ complete (verified) |
 | 7     | AI analyst (LangGraph)              | ⬜ not started         |
 | 8     | Trading intelligence, alerts, paper | ⬜ not started         |
 | 9     | Backtesting                         | ⬜ not started         |
@@ -96,6 +96,31 @@ Last updated: Phase 1 completion.
 2. Regime detection (deterministic first: vol-percentile + trend state)
 3. Historical scenario comparison (e.g., "current RSI/vol regime vs history")
 4. Scenario generation feed for the Phase 7 AI analyst
+
+## Next implementation tasks (Phase 7)
+
+1. LLM provider integration (OpenRouter, per platform convention — verify model slug against GET /api/v1/models)
+2. LangGraph analyst graph: Technical / SMC-ICT / Macro / News / Quant / Risk nodes → Chief synthesis
+3. Structured outputs (Pydantic-validated JSON) + prompt/model version tracking
+4. Evidence reconciliation: scenarios + detections + macro + quant stats as evidence; LLM never emits numbers
+5. Analysis persistence (market_analyses + analysis_evidence migrations) + `/api/v1/analysis/*`
+6. News sentiment classification (fills `classified`/`sentiment` honestly)
+
+## Phase 6 — completed features (verified)
+
+- `quant/correlations.py`: as-of join with 7-day staleness guard, **pairwise**
+  return alignment, rolling 30d correlation + full-sample Pearson. Live values:
+  gold vs broad USD **−0.21** (classic inverse), vs 10Y yield **+0.30**, vs real
+  yield +0.25, vs WTI +0.07.
+- `quant/regimes.py`: deterministic regime = EMA alignment × HV percentile ×
+  ADX strength → live: **"down trend / low vol / strong"**.
+- `quant/scenarios.py`: empirical forward-return statistics per RSI×vol bucket
+  (5/10/20d horizons, median/mean/up-rate/**n**) — explicitly labeled as
+  historical frequencies, not predictions. Live bucket (neutral/low-vol):
+  n≈1,090, 20d median +0.74% vs all-time +0.61%.
+- Gold/silver correlation: near-zero (0.00) with the free-plan SI feed —
+  **surfaced with a data-quality caveat** rather than hidden.
+- Endpoint `/v1/instruments/{symbol}/quant` → gateway → dashboard Quant panel.
 
 ## Phase 5 — completed features (verified)
 
