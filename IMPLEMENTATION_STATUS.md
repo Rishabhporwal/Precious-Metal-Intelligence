@@ -10,7 +10,7 @@ Last updated: Phase 1 completion.
 | 1     | Market data (Twelve Data, backfill) | ✅ complete (verified) |
 | 2     | Dashboard                           | ✅ complete (verified) |
 | 3     | Technical analysis                  | ✅ complete (verified) |
-| 4     | Advanced strategies (SMC/ICT/…)     | ⬜ not started         |
+| 4     | Advanced strategies (SMC/ICT/…)     | ✅ complete (verified) |
 | 5     | Macro & news                        | ⬜ not started         |
 | 6     | Quantitative engine                 | ⬜ not started         |
 | 7     | AI analyst (LangGraph)              | ⬜ not started         |
@@ -51,6 +51,44 @@ Last updated: Phase 1 completion.
   PWH/PWL 4,082.0/3,871.2; S/R levels clustered with touch counts.
 - MTF: 1h sideways-strong (ADX 72), 1day down-strong (ADX 32.7).
 - Session ranges flat = Sunday (Nov 1) — correct market reality, not a bug.
+
+## Next implementation tasks (Phase 5)
+
+1. FRED adapter (macro series: DXY components, yields, CPI/PCE/NFP)
+2. Economic calendar source + `economic_events` migration
+3. CFTC positioning reports adapter
+4. News ingestion + classification (LLM, untrusted-input hardened)
+5. `scheduler` compose service (calendar/news polling)
+
+## Phase 4 — completed features (verified)
+
+- Strategy framework: `strategies/base.py` (Detection record + CandleContext with
+  ATR/swings/structure events/prev-day-week/session data), `registry.py` (16 P0
+  strategies), `engine.py` (run + append-only persistence, unique-constraint
+  dedup, per-strategy enable/params from `strategy_configs`).
+- 16 P0 strategies implemented and tested: Liquidity Sweep (multi-bar reclaim,
+  ATR-filtered), EQH/EQL pools, FVG (fill tracking → active/consumed), Order
+  Blocks (displacement-confirmed, mitigation tracked), Breaker Blocks,
+  Displacement, Premium/Discount, PDH/PDL/PWH/PWL liquidity, Asian Range,
+  MSS (CHoCH + displacement), Fib/OTE (impulse-leg semantics), Failed Breakout,
+  Wyckoff Spring/Upthrust (price-only, no phase claims), SMT (gold vs counterpart
+  on stored candles), and the **composite** Sweep→MSS→Displacement→FVG→OB with
+  satisfied/missing/conflicting conditions + Python-computed entry/stop/R-targets.
+- Migration 0004: `strategy_detections` (append-only, identity-deduped),
+  `strategy_configs`, `market_structure_events`.
+- Ingestion auto-evaluates strategies after candle writes (never blocks ingestion).
+- Endpoints: `/api/v1/strategies{,/detections,/evaluate}`; `/strategies` UI with
+  registry, detections table, active-level chart annotations.
+
+## Phase 4 — verified on live gold data (2026-11-02)
+
+- 16/16 strategies registered & enabled; evaluation over 1h+1day produced
+  **103 persisted detections** (57 1h + 46 1day), e.g. active bullish FVG
+  3,876.1–3,894.7, failed-breakout reclaim @ 3,875.5, 1h displacements both
+  directions, OTE zones around 3,906–3,910.
+- Re-running evaluation persists 0 new rows (identity dedup verified).
+- Composite candidates carry entry/stop/target levels computed in Python; marked
+  `complete` only when all five conditions satisfied — never a trade signal.
 
 ## Phase 1 — completed features
 
