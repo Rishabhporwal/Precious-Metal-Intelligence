@@ -11,7 +11,7 @@ Last updated: Phase 1 completion.
 | 2     | Dashboard                           | ✅ complete (verified) |
 | 3     | Technical analysis                  | ✅ complete (verified) |
 | 4     | Advanced strategies (SMC/ICT/…)     | ✅ complete (verified) |
-| 5     | Macro & news                        | ⬜ not started         |
+| 5     | Macro & news                        | ✅ complete (verified) |
 | 6     | Quantitative engine                 | ⬜ not started         |
 | 7     | AI analyst (LangGraph)              | ⬜ not started         |
 | 8     | Trading intelligence, alerts, paper | ⬜ not started         |
@@ -89,6 +89,44 @@ Last updated: Phase 1 completion.
 - Re-running evaluation persists 0 new rows (identity dedup verified).
 - Composite candidates carry entry/stop/target levels computed in Python; marked
   `complete` only when all five conditions satisfied — never a trade signal.
+
+## Next implementation tasks (Phase 6)
+
+1. Correlation engine (gold vs yields/DXY/oil on stored daily candles)
+2. Regime detection (deterministic first: vol-percentile + trend state)
+3. Historical scenario comparison (e.g., "current RSI/vol regime vs history")
+4. Scenario generation feed for the Phase 7 AI analyst
+
+## Phase 5 — completed features (verified)
+
+- **FRED adapter** (`providers/fred.py`): 9-series watchlist — 2Y/10Y nominal
+  yields, 10Y real yield (DFII10), broad trade-weighted USD index (DTWEXBGS,
+  honest DXY proxy — DXY itself is proprietary ICE data), CPI, PCE, nonfarm
+  payrolls, unemployment, WTI spot. Observations stored **append-only with
+  fetch vintage** (`macro_observations`). Auth errors surfaced honestly.
+- **CFTC adapter** (`providers/cftc.py`): public Socrata futures-only COT —
+  gold & silver net non-commercial positioning with full detail JSON.
+- **Economic calendar**: real scheduled release dates from FRED's release API
+  (no extra provider) — CPI/NFP/PCE tracked, past + upcoming.
+- **News ingestion** (`providers/news_rss.py`): multi-feed RSS parser; HTML
+  stripped (untrusted input → plain text only); `classified=false` until the
+  Phase 7 LLM — no sentiment invented.
+- **Scheduler service**: macro 6h, calendar+CFTC 12h, news 30min polling loops.
+- Endpoints `/api/v1/macro/{summary,events,news}`; `/macro` UI page (series
+  cards with deltas, CFTC positioning, calendar, news list).
+
+## Phase 5 — verified live (2026-11-02)
+
+- First scheduler cycle: **126 FRED observations**, 18 release dates, 16 CFTC
+  rows, 51 articles (47 new after dedup) — all stored.
+- Live values: 10Y 4.98% (−0.07), 2Y 4.61%, real yield 2.63%, broad USD 121.3,
+  WTI $103.37, CPI 336.3, UNRATE 4.2%.
+- CFTC: gold net non-commercial **+186,451** contracts (54.7% long of OI),
+  silver +19,703 — report date 2026-10-27.
+- Calendar: NFP 2026-11-06, CPI 2026-11-10, PCE 2026-11-25 (upcoming, real).
+- Caught by own UI: quant container reported FRED unconfigured (key was only in
+  scheduler env) — fixed by passing the key to the quant service; health now
+  truthfully reports configured.
 
 ## Phase 1 — completed features
 
