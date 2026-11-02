@@ -14,7 +14,7 @@ Last updated: Phase 1 completion.
 | 5     | Macro & news                        | ✅ complete (verified) |
 | 6     | Quantitative engine                 | ✅ complete (verified) |
 | 7     | AI analyst (LangGraph)              | ✅ complete (verified) |
-| 8     | Trading intelligence, alerts, paper | ⬜ not started         |
+| 8     | Trading intelligence, alerts, paper| ✅ complete (verified) |
 | 9     | Backtesting                         | ⬜ not started         |
 | 10    | Hardening                           | ⬜ not started         |
 
@@ -113,6 +113,44 @@ Last updated: Phase 1 completion.
 3. Alert engine (price/structure/setup alerts, dedupe + cooldowns) + Telegram
 4. Paper trading engine (virtual accounts, fills, P&L) + migrations
 5. `/api/v1/setups` + `/api/v1/paper/*` endpoints + UI
+
+## Next implementation tasks (Phase 9)
+
+1. Backtest engine core: historical replay of composite strategy with cost model
+2. Metrics (win rate, PF, expectancy, max DD, avg R, Sharpe/Sortino, by session)
+3. Walk-forward + out-of-sample split
+4. Leakage tests (anti-repaint assertion on strategies)
+5. `/api/v1/backtests` + results UI
+
+## Phase 8 — completed features (verified)
+
+- **Risk engine** (`app/risk.py`): setup construction from composite detections;
+  validation gate = fresh quote (≤15 min), entry-not-missed, stop ≥ 0.3 ATR with
+  correct side, R/R ≥ 1.5, **48h high-impact event policy**; risk-based sizing on
+  the operator's real context ($1,000 equity, 1% risk, per-oz contract spec).
+- **Alert engine** (`app/alerts.py` + `providers/telegram.py`): 7 rule kinds
+  (price bands, sweep, FVG, MSS, setup, analysis), cooldown + dedupe (a
+  continuously-true condition fires once per window), Telegram delivery with
+  honest `delivered=false + error` when unconfigured.
+- **Paper trading** (`app/paper.py`): $1,000 default account, market fills at
+  stored quotes, **pessimistic stop fills**, SL/TP monitoring (scheduler, 2 min),
+  trade outcomes linked back to setups (R-multiple), performance stats.
+  Simulated only — no live broker code exists anywhere.
+- Migration 0007: trade_setups, trade_outcomes, alert_rules, alert_events,
+  paper_accounts, paper_trades, paper_trade_fills.
+- UI: `/setups` (validated + transparently-rejected setups with reasons),
+  `/paper` (equity/P&L cards, trade form with risk-based sizing, open/closed
+  tables), `/alerts` (rule CRUD, browser notifications, event history).
+
+## Phase 8 — verified live (2026-11-02)
+
+- Risk gate correctly **rejected** the active composite candidate with reasons:
+  "stop too tight (10.10 < 0.3 ATR = 16.63)", "R/R 1.00 below minimum 1.5" —
+  the gate working as designed, not a failure.
+- Alert fired: price 3,911.85 ≥ 3,800 rule → event recorded with
+  `delivered=false, error=TELEGRAM not configured` (honest).
+- Paper trade: risk-based sizing **0.0894 oz** = $10 ÷ $111.85 stop distance
+  (1% rule exact), filled at 3,911.85, closed, outcome linked.
 
 ## Phase 7 — completed features (verified)
 
