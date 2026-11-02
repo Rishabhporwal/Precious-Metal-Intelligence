@@ -46,13 +46,12 @@ Last updated: Phase 1 completion.
 
 | Instrument | Provider symbol | Daily candles | Hourly candles | Note |
 |---|---|---|---|---|
-| XAUUSD | XAU/USD | 5,000 (from 2007-08-29) | 5,000 | verified, enabled |
-| XAGUSD | **SI** (COMEX futures) | 316 | 2,199 | spot XAG/USD needs a Grow/Venture plan — SI used as an honest futures proxy, noted in the registry |
+| XAUUSD | XAU/USD | 5,000 (from 2007-08-29) | 5,000 | verified, enabled — **sole focus per operator decision** |
+| XAGUSD | SI (COMEX futures) | 316 | 2,199 | **parked** (operator decision): spot XAG/USD needs a Grow/Venture plan; candles retained, ingestion disabled |
 
-- Live quote ingested at verification time: gold 3,907.26 @ 2026-11-01T20:00Z.
+- Live quote ingested: gold 3,906.34 @ 2026-11-01T20:00Z (refreshed every 5 min).
+- Ingestion is gold-only → ~384 Twelve Data credits/day (~52% headroom).
 - 6 other instruments stay disabled pending entitlement verification (deliberate).
-- Free-plan limitation documented: XAG/USD spot is paywalled by the provider —
-  the system reports it honestly instead of substituting mock data.
 
 ## Tests executed (Phase 1)
 

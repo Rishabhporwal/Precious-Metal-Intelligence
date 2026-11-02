@@ -77,12 +77,10 @@ function ago(iso: string | null | undefined): string {
 }
 
 async function MarketsData() {
-  const [instrumentsResp, xauQuote, xagQuote, xauCandles, xagCandles] = await Promise.all([
+  const [instrumentsResp, xauQuote, xauCandles] = await Promise.all([
     getJson<{ instruments: InstrumentRow[] }>("/api/v1/markets"),
     getJson<{ price: string; market_ts: string }>("/api/v1/markets/XAUUSD/quote"),
-    getJson<{ price: string; market_ts: string }>("/api/v1/markets/XAGUSD/quote"),
     getJson<{ candles: Candle[] }>("/api/v1/markets/XAUUSD/candles?interval=1day&limit=90"),
-    getJson<{ candles: Candle[] }>("/api/v1/markets/XAGUSD/candles?interval=1day&limit=90"),
   ]);
 
   if (!instrumentsResp) {
@@ -95,37 +93,27 @@ async function MarketsData() {
 
   const instruments = instrumentsResp.instruments;
   const enabled = instruments.filter((i) => i.enabled);
-  const pending = instruments.filter((i) => !i.enabled);
+  const parked = instruments.filter((i) => !i.enabled);
 
   return (
     <>
-      <section className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        {[
-          { name: "Gold — XAU/USD (spot)", quote: xauQuote, candles: xauCandles?.candles ?? [], color: "#f5c451" },
-          {
-            name: "Silver — COMEX SI (futures)",
-            quote: xagQuote,
-            candles: xagCandles?.candles ?? [],
-            color: "#a8b6c8",
-          },
-        ].map((card) => (
-          <div key={card.name} className="rounded-lg border border-neutral-800 bg-neutral-900/60 p-4">
-            <div className="text-xs text-neutral-400">{card.name}</div>
-            <div className="mt-1 flex items-baseline gap-2">
-              <span className="text-3xl font-semibold text-neutral-100">{fmt(card.quote?.price)}</span>
-              <span className="text-[11px] text-neutral-500">{ago(card.quote?.market_ts)}</span>
-            </div>
-            <Sparkline candles={card.candles} color={card.color} />
-            <div className="mt-1 text-[10px] text-neutral-600">
-              last {card.candles.length} daily closes · source: Twelve Data via quant engine
-            </div>
+      <section>
+        <div className="rounded-lg border border-yellow-900/50 bg-neutral-900/60 p-5">
+          <div className="text-xs text-neutral-400">Gold — XAU/USD (spot)</div>
+          <div className="mt-1 flex items-baseline gap-3">
+            <span className="text-5xl font-semibold text-neutral-100">{fmt(xauQuote?.price)}</span>
+            <span className="text-[11px] text-neutral-500">{ago(xauQuote?.market_ts)}</span>
           </div>
-        ))}
+          <Sparkline candles={xauCandles?.candles ?? []} color="#f5c451" />
+          <div className="mt-1 text-[10px] text-neutral-600">
+            last {xauCandles?.candles.length ?? 0} daily closes · source: Twelve Data via quant engine
+          </div>
+        </div>
       </section>
 
       <section className="mt-6">
         <h2 className="mb-2 text-xs font-semibold uppercase tracking-widest text-neutral-500">
-          Ingested instruments
+          Instrument registry
         </h2>
         <div className="overflow-x-auto rounded-lg border border-neutral-800">
           <table className="w-full text-left text-xs">
@@ -149,14 +137,16 @@ async function MarketsData() {
                   <td className="px-3 py-2 text-neutral-500">{i.verification_note ?? ""}</td>
                 </tr>
               ))}
-              {pending.map((i) => (
+              {parked.map((i) => (
                 <tr key={i.symbol} className="border-t border-neutral-800 opacity-50">
                   <td className="px-3 py-2 font-medium text-neutral-400">{i.symbol}</td>
-                  <td className="px-3 py-2 text-neutral-500">not verified</td>
-                  <td className="px-3 py-2">—</td>
-                  <td className="px-3 py-2">—</td>
-                  <td className="px-3 py-2">—</td>
-                  <td className="px-3 py-2 text-neutral-500">provider entitlement not confirmed</td>
+                  <td className="px-3 py-2 text-neutral-500">
+                    {i.provider_symbol ?? "not verified"}
+                  </td>
+                  <td className="px-3 py-2">{i.freshness.daily_count}</td>
+                  <td className="px-3 py-2">{i.freshness.hourly_count}</td>
+                  <td className="px-3 py-2">{i.freshness.last_daily ? ago(i.freshness.last_daily) : "—"}</td>
+                  <td className="px-3 py-2 text-neutral-500">{i.verification_note ?? "provider entitlement not confirmed"}</td>
                 </tr>
               ))}
             </tbody>
