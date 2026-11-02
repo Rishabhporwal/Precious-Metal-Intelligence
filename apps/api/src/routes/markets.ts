@@ -316,6 +316,46 @@ export async function registerMarketRoutes(app: FastifyInstance): Promise<void> 
     return reply.code(res.ok ? 200 : res.status).send(payload);
   });
 
+  app.post("/api/v1/backtests", async (request, reply) => {
+    try {
+      const res = await fetch(`${app.config.quantInternalUrl}/v1/backtests`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(request.body ?? {}),
+        signal: AbortSignal.timeout(300000),
+      });
+      const payload = await res.json().catch(() => null);
+      return reply.code(res.ok ? 200 : res.status).send(payload);
+    } catch (err) {
+      app.log.error({ err }, "backtest failed");
+      return reply.code(502).send({
+        error: { code: "UPSTREAM_ERROR", message: "backtest failed" },
+      } satisfies ApiErrorResponse);
+    }
+  });
+
+  app.get<{ Querystring: { symbol?: string } }>("/api/v1/backtests", async (request, reply) => {
+    const symbol = ((request.query.symbol as string) ?? "XAUUSD").toUpperCase();
+    if (!SYMBOL_RE.test(symbol)) {
+      return reply.code(400).send({
+        error: { code: "INVALID_SYMBOL", message: "symbol must be 3-8 uppercase letters" },
+      } satisfies ApiErrorResponse);
+    }
+    const result = await proxy(app, `/v1/backtests?symbol=${symbol}`);
+    return reply.code(result.statusCode).send(result.body);
+  });
+
+  app.get<{ Params: { id?: string } }>("/api/v1/backtests/:id", async (request, reply) => {
+    const id = parseInt(request.params.id ?? "0", 10);
+    if (!Number.isInteger(id) || id <= 0) {
+      return reply.code(400).send({
+        error: { code: "INVALID_ID", message: "run id must be a positive integer" },
+      } satisfies ApiErrorResponse);
+    }
+    const result = await proxy(app, `/v1/backtests/${id}`);
+    return reply.code(result.statusCode).send(result.body);
+  });
+
   app.post("/api/v1/strategies/evaluate", async (request, reply) => {
     try {
       const body = (request.body ?? {}) as { symbol?: string; intervals?: string[] };
