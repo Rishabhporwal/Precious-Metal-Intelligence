@@ -130,6 +130,13 @@ XAG/USD), P1/P2 strategies, HMM/GARCH regime models, calibrated probabilities.
 
 ## Phase 10 — completed features (verified)
 
+- **Provider timestamp defect FOUND + FIXED**: Twelve Data `time_series`
+  defaults to exchange-local timestamps (UTC+11 for XAU/USD) — all stored
+  candles were future-stamped. Fixed via the documented `timezone=UTC`
+  parameter, added an ingestion clock-skew guard, purged 12,617 candles +
+  159 detections (operator-approved), re-backfilled and re-evaluated
+  (106 detections, all anchors now ≤ now). Documented in
+  DATA_PROVIDER_GUIDE.md.
 - **Data-quality monitor** (`app/dataquality.py`, `/v1/data/quality` +
   gateway `/api/v1/data/quality`): per-interval staleness with weekend-aware
   thresholds, missing-candle gap detection (gap > 2.5× spacing, weekend
