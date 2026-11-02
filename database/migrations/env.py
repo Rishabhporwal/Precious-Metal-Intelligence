@@ -20,7 +20,9 @@ config = context.config
 
 
 def _database_url() -> str:
-    url = os.environ.get("DATABASE_URL") or os.environ.get("DATABASE_URL_HOST")
+    # Host-run tooling sets DATABASE_URL_HOST (localhost); container runs set
+    # DATABASE_URL (internal network). Prefer the host-specific one when present.
+    url = os.environ.get("DATABASE_URL_HOST") or os.environ.get("DATABASE_URL")
     if not url:
         raise RuntimeError(
             "DATABASE_URL (or DATABASE_URL_HOST) must be set for Alembic migrations."
