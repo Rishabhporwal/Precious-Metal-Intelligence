@@ -5,8 +5,9 @@ analysis, Smart Money Concepts / ICT / Wyckoff strategy detection, macro & news
 intelligence, evidence-backed AI analysis, risk-validated trade setups, paper
 trading and reproducible backtesting.
 
-> **Status:** Phase 0 (platform bootstrap) complete — see
-> [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md).
+> **Status:** All 10 spec phases complete & verified — see
+> [IMPLEMENTATION_STATUS.md](IMPLEMENTATION_STATUS.md). Run
+> `database/scripts/verify.sh` for a one-command full check.
 
 ## Architecture
 

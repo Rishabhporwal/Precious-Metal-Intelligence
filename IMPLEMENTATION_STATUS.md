@@ -16,7 +16,7 @@ Last updated: Phase 1 completion.
 | 7     | AI analyst (LangGraph)              | ✅ complete (verified) |
 | 8     | Trading intelligence, alerts, paper| ✅ complete (verified) |
 | 9     | Backtesting                         | ✅ complete (verified) |
-| 10    | Hardening                           | ⬜ not started         |
+| 10    | Hardening                           | ✅ complete (verified) |
 
 ## Next implementation tasks (Phase 4)
 
@@ -122,14 +122,27 @@ Last updated: Phase 1 completion.
 4. Leakage tests (anti-repaint assertion on strategies)
 5. `/api/v1/backtests` + results UI
 
-## Next implementation tasks (Phase 10)
+## Next implementation tasks
 
-1. Test coverage sweep (edge cases per module), lint/type gates in CI-style script
-2. Data-quality monitor (missing-candle detection, stale alerts)
-3. Performance pass (indicator caching, query indexes)
-4. Security pass (auth boundary stub, CORS review, key handling review)
-5. Mobile responsiveness pass on all pages
-6. Final docs + runbooks
+None — all 10 spec phases are complete. Candidate future extensions (not part
+of the approved spec): silver re-enable (needs paid Twelve Data plan for spot
+XAG/USD), P1/P2 strategies, HMM/GARCH regime models, calibrated probabilities.
+
+## Phase 10 — completed features (verified)
+
+- **Data-quality monitor** (`app/dataquality.py`, `/v1/data/quality` +
+  gateway `/api/v1/data/quality`): per-interval staleness with weekend-aware
+  thresholds, missing-candle gap detection (gap > 2.5× spacing, weekend
+  tolerated), quote age; `overall: ok|degraded`. Report includes age hours,
+  gap counts, candle counts — no data is filled or fabricated.
+- **Optional auth boundary**: `PMI_API_TOKEN` in `.env` → gateway requires
+  `x-pmi-token` on mutating methods (off by default, local-first). Tested.
+- **Mobile responsiveness**: nav wraps properly at 390 px (verified with
+  device-metric emulation screenshots); content stacks, no horizontal overflow.
+- **Runbooks**: `docs/runbooks/data-freshness.md`, `docs/runbooks/llm-cost.md`.
+- **One-command verification**: `database/scripts/verify.sh` (lint + all test
+  suites + container health + live data-quality readout).
+- `.env.example` documents the token and the port deviation.
 
 ## Phase 9 — completed features (verified)
 

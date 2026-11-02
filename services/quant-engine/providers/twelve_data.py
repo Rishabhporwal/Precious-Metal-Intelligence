@@ -224,6 +224,10 @@ class TwelveDataProvider(BaseProvider):
             "interval": INTERVAL_MAP[interval],
             "outputsize": min(limit, 5000),
             "order": "ASC",
+            # Provider default timestamps are EXCHANGE-LOCAL (observed UTC+11 for
+            # XAU/USD, i.e. Sydney). Force UTC — verified against the documented
+            # `timezone` parameter; without it candles arrive future-stamped.
+            "timezone": "UTC",
         }
         if start is not None:
             params["startdate"] = start.astimezone(UTC).strftime("%Y-%m-%d %H:%M:%S")

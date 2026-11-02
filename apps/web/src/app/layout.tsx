@@ -38,20 +38,20 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col bg-neutral-950 text-neutral-200">
-        <nav className="border-b border-neutral-800 bg-neutral-950/95 px-6 py-3">
+        <header className="border-b border-neutral-800 bg-neutral-950/95 px-6 py-3">
           <div className="mx-auto flex max-w-4xl items-center justify-between">
             <Link href="/" className="font-mono text-sm font-semibold text-neutral-100">
               PMI · Precious Metals Intelligence
             </Link>
-            <div className="flex gap-4 font-mono text-xs text-neutral-400">
+            <nav className="flex flex-wrap justify-end gap-x-4 gap-y-1 font-mono text-xs text-neutral-400">
               {NAV.map((item) => (
                 <Link key={item.href} href={item.href} className="hover:text-neutral-100">
                   {item.label}
                 </Link>
               ))}
-            </div>
+            </nav>
           </div>
-        </nav>
+        </header>
         <div className="flex-1">{children}</div>
       </body>
     </html>

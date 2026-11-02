@@ -108,6 +108,14 @@ def ingest_candles(
         store.record_observation(conn, provider_id, provider_symbol, "time_series", raw, ok=True)
         written = store.upsert_candles(conn, instrument["id"], provider_id, interval, candles)
     logger.info("candles %s %s: %d rows", symbol, interval.value, written)
+    # Provider clock-skew guard: a newest candle far in the future means the
+    # provider ignored the timezone contract — flag loudly, never store blindly.
+    latest = max(c.market_ts for c in candles)
+    if latest > datetime.now(UTC) + timedelta(minutes=5):
+        logger.warning(
+            "candles %s %s: newest candle %s is in the FUTURE — provider clock skew, check timezone handling",
+            symbol, interval.value, latest.isoformat(),
+        )
 
     # Strategy evaluation hook: run the engine on intervals we evaluate.
     from providers.base import CandleInterval as CI

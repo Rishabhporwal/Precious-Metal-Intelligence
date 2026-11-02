@@ -37,6 +37,12 @@ until their verify endpoint is run (~2 credits per instrument).
 
 ## Volume honesty
 
+- **Timestamps**: Twelve Data `time_series` defaults to EXCHANGE-LOCAL
+  timestamps (observed UTC+11 for XAU/USD). All candle/quote requests pass the
+  documented `timezone=UTC` parameter; ingestion warns loudly if a newest
+  candle ever lands in the future (clock-skew guard). Verified 2026-11-02: the
+  wrong default had future-stamped all stored candles — purged and re-backfilled.
+
 Twelve Data volume for spot FX/metals is tick count — the adapter labels it
 `volume_type='tick'` and it is never presented as exchange/institutional volume.
 Futures symbols carry real traded volume but are still conservatively labeled

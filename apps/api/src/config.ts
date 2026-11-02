@@ -5,6 +5,8 @@ export interface AppConfig {
   databaseUrl: string | undefined;
   redisUrl: string | undefined;
   quantInternalUrl: string;
+  /** Optional shared token: when set, mutating requests must carry header `x-pmi-token`. */
+  apiToken: string | undefined;
 }
 
 function requireInt(env: NodeJS.ProcessEnv, key: string, fallback: number): number {
@@ -30,5 +32,6 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): AppConfig {
     databaseUrl: env.DATABASE_URL || undefined,
     redisUrl: env.REDIS_URL || undefined,
     quantInternalUrl: env.QUANT_INTERNAL_URL || "http://localhost:8001",
+    apiToken: env.PMI_API_TOKEN || undefined,
   };
 }
