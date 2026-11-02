@@ -110,4 +110,59 @@ export async function registerMarketRoutes(app: FastifyInstance): Promise<void> 
       return reply.code(result.statusCode).send(result.body);
     },
   );
+
+  app.get("/api/v1/strategies", async (_request, reply) => {
+    const result = await proxy(app, "/v1/strategies");
+    return reply.code(result.statusCode).send(result.body);
+  });
+
+  app.get<{ Querystring: { symbol?: string; interval?: string; limit?: string } }>(
+    "/api/v1/strategies/detections",
+    async (request, reply) => {
+      const symbol = (request.query.symbol ?? "XAUUSD").toUpperCase();
+      if (!SYMBOL_RE.test(symbol)) {
+        return reply.code(400).send({
+          error: { code: "INVALID_SYMBOL", message: "symbol must be 3-8 uppercase letters" },
+        } satisfies ApiErrorResponse);
+      }
+      const interval = request.query.interval;
+      if (interval && !INTERVAL_RE.test(interval)) {
+        return reply.code(400).send({
+          error: { code: "INVALID_INTERVAL", message: "invalid interval" },
+        } satisfies ApiErrorResponse);
+      }
+      const limit = Math.min(Math.max(parseInt(request.query.limit ?? "50", 10) || 50, 1), 200);
+      const q = `/v1/strategies/detections?symbol=${symbol}${interval ? `&interval=${interval}` : ""}&limit=${limit}`;
+      const result = await proxy(app, q);
+      return reply.code(result.statusCode).send(result.body);
+    },
+  );
+
+  app.post("/api/v1/strategies/evaluate", async (request, reply) => {
+    try {
+      const body = (request.body ?? {}) as { symbol?: string; intervals?: string[] };
+      const symbol = (body.symbol ?? "XAUUSD").toUpperCase();
+      if (!SYMBOL_RE.test(symbol)) {
+        return reply.code(400).send({
+          error: { code: "INVALID_SYMBOL", message: "symbol must be 3-8 uppercase letters" },
+        } satisfies ApiErrorResponse);
+      }
+      const intervals = (body.intervals ?? ["15min", "1h", "1day"]).filter((i) =>
+        INTERVAL_RE.test(i),
+      );
+      const res = await fetch(`${app.config.quantInternalUrl}/v1/strategies/evaluate`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ symbol, intervals }),
+        signal: AbortSignal.timeout(60000),
+      });
+      const payload = await res.json().catch(() => null);
+      return reply.code(res.ok ? 200 : res.status).send(payload);
+    } catch (err) {
+      app.log.error({ err }, "strategy evaluation failed");
+      return reply.code(502).send({
+        error: { code: "UPSTREAM_ERROR", message: "strategy evaluation failed" },
+      } satisfies ApiErrorResponse);
+    }
+  });
 }

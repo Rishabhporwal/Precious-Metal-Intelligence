@@ -108,6 +108,18 @@ def ingest_candles(
         store.record_observation(conn, provider_id, provider_symbol, "time_series", raw, ok=True)
         written = store.upsert_candles(conn, instrument["id"], provider_id, interval, candles)
     logger.info("candles %s %s: %d rows", symbol, interval.value, written)
+
+    # Strategy evaluation hook: run the engine on intervals we evaluate.
+    from providers.base import CandleInterval as CI
+    from strategies.engine import EVAL_INTERVALS, run_evaluation
+
+    if interval in EVAL_INTERVALS:
+        try:
+            result = run_evaluation(symbol, CI(interval.value))
+            logger.info("strategies %s %s: %d persisted", symbol, interval.value,
+                        result.get("detections_persisted", 0))
+        except Exception as exc:  # noqa: BLE001 — detection failures never block ingestion
+            logger.warning("strategy evaluation failed for %s %s: %s", symbol, interval.value, exc)
     return written
 
 

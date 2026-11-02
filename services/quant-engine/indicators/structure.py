@@ -103,9 +103,8 @@ def detect_structure_events(
         # activate swings whose confirmation index has arrived (i >= confirmed_index)
         while pending is not None and pending.confirmed_index <= i:
             if pending.kind == "high":
-                if active_high is None or pending.price > active_high.price or pending.index > active_high.index:
-                    if active_high is None or pending.index > active_high.index:
-                        active_high = pending
+                if active_high is None or pending.index > active_high.index:
+                    active_high = pending
             else:
                 if active_low is None or pending.index > active_low.index:
                     active_low = pending

@@ -19,7 +19,7 @@ def test_swings_require_confirmation_bars():
     highs = [1.0, 2.0, 5.0, 2.0, 1.0]
     lows = [0.5] * 5
     swings = detect_swings(highs, lows, k=2)
-    high_swing = [s for s in swings if s.kind == "high"][0]
+    high_swing = next(s for s in swings if s.kind == "high")
     assert high_swing.index == 2
     assert high_swing.confirmed_index == 4  # only known 2 bars later (no repaint)
 

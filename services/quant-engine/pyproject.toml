@@ -28,7 +28,7 @@ dev = [
 ]
 
 [tool.hatch.build.targets.wheel]
-packages = ["app", "providers", "ingestion", "indicators"]
+packages = ["app", "providers", "ingestion", "indicators", "strategies"]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
@@ -40,4 +40,6 @@ target-version = "py312"
 
 [tool.ruff.lint]
 # B008: FastAPI's Query/Depends-in-defaults idiom is intentional here.
-ignore = ["B008"]
+# RUF012: strategy default_params are intentionally class-level config dicts
+#         (copied into each detection's params before use).
+ignore = ["B008", "RUF012"]
