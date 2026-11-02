@@ -70,4 +70,44 @@ export async function registerMarketRoutes(app: FastifyInstance): Promise<void> 
     const result = await proxy(app, "/v1/instruments");
     return reply.code(result.statusCode).send(result.body);
   });
+
+  app.get<{ Params: { symbol?: string }; Querystring: { interval?: string; limit?: string } }>(
+    "/api/v1/markets/:symbol/indicators",
+    async (request, reply) => {
+      const symbol = (request.params.symbol ?? "").toUpperCase();
+      if (!SYMBOL_RE.test(symbol)) {
+        return reply.code(400).send({
+          error: { code: "INVALID_SYMBOL", message: "symbol must be 3-8 uppercase letters" },
+        } satisfies ApiErrorResponse);
+      }
+      const interval = request.query.interval ?? "1day";
+      if (!INTERVAL_RE.test(interval)) {
+        return reply.code(400).send({
+          error: { code: "INVALID_INTERVAL", message: "invalid interval" },
+        } satisfies ApiErrorResponse);
+      }
+      const result = await proxy(app, `/v1/instruments/${symbol}/indicators?interval=${interval}`);
+      return reply.code(result.statusCode).send(result.body);
+    },
+  );
+
+  app.get<{ Params: { symbol?: string }; Querystring: { interval?: string } }>(
+    "/api/v1/markets/:symbol/structure",
+    async (request, reply) => {
+      const symbol = (request.params.symbol ?? "").toUpperCase();
+      if (!SYMBOL_RE.test(symbol)) {
+        return reply.code(400).send({
+          error: { code: "INVALID_SYMBOL", message: "symbol must be 3-8 uppercase letters" },
+        } satisfies ApiErrorResponse);
+      }
+      const interval = request.query.interval ?? "1h";
+      if (!INTERVAL_RE.test(interval)) {
+        return reply.code(400).send({
+          error: { code: "INVALID_INTERVAL", message: "invalid interval" },
+        } satisfies ApiErrorResponse);
+      }
+      const result = await proxy(app, `/v1/instruments/${symbol}/structure?interval=${interval}`);
+      return reply.code(result.statusCode).send(result.body);
+    },
+  );
 }

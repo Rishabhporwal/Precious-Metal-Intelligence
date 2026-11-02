@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { GoldChart } from "@/components/GoldChart";
 import { LiveTicker } from "@/components/LiveTicker";
+import { AnalyticsData, AnalyticsSkeleton } from "@/components/AnalyticsPanel";
 
 const API_INTERNAL_URL = process.env.API_INTERNAL_URL ?? "http://localhost:8000";
 
@@ -114,6 +115,9 @@ export default function DashboardPage() {
         <div className="space-y-4">
           <LiveTicker />
           <GoldChart initialInterval="1day" />
+          <Suspense fallback={<AnalyticsSkeleton />}>
+            <AnalyticsData />
+          </Suspense>
           <Suspense fallback={<FreshnessSkeleton />}>
             <FreshnessPanel />
           </Suspense>

@@ -8,6 +8,7 @@ COPY services/quant-engine/pyproject.toml ./
 COPY services/quant-engine/app ./app
 COPY services/quant-engine/providers ./providers
 COPY services/quant-engine/ingestion ./ingestion
+COPY services/quant-engine/indicators ./indicators
 RUN pip install --no-cache-dir . \
     && chown -R appuser:appuser /engine
 
