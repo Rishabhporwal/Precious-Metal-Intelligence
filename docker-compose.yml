@@ -73,6 +73,7 @@ services:
       DATABASE_URL: ${DATABASE_URL}
       REDIS_URL: ${REDIS_URL}
       TWELVEDATA_API_KEY: ${TWELVEDATA_API_KEY}
+      FRED_API_KEY: ${FRED_API_KEY}
     ports:
       - "${QUANT_PORT:-8001}:8001"
     depends_on:
@@ -102,6 +103,28 @@ services:
       QUOTE_POLL_SECONDS: ${QUOTE_POLL_SECONDS:-300}
       MIN_CANDLE_POLL_SECONDS: ${MIN_CANDLE_POLL_SECONDS:-900}
       BACKFILL_OUTPUTSIZE: ${BACKFILL_OUTPUTSIZE:-5000}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      quant:
+        condition: service_healthy
+    restart: unless-stopped
+
+  scheduler:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/quant.Dockerfile
+    container_name: pmi-scheduler
+    command: ["python", "-m", "scheduler"]
+    environment:
+      ENV: production
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_URL: ${REDIS_URL}
+      FRED_API_KEY: ${FRED_API_KEY}
+      MACRO_INTERVAL_SECONDS: ${MACRO_INTERVAL_SECONDS:-21600}
+      CALENDAR_INTERVAL_SECONDS: ${CALENDAR_INTERVAL_SECONDS:-43200}
+      CFTC_INTERVAL_SECONDS: ${CFTC_INTERVAL_SECONDS:-43200}
+      NEWS_INTERVAL_SECONDS: ${NEWS_INTERVAL_SECONDS:-1800}
     depends_on:
       postgres:
         condition: service_healthy

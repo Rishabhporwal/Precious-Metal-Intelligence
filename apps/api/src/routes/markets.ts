@@ -138,6 +138,22 @@ export async function registerMarketRoutes(app: FastifyInstance): Promise<void> 
     },
   );
 
+  app.get("/api/v1/macro/summary", async (_request, reply) => {
+    const result = await proxy(app, "/v1/macro/summary");
+    return reply.code(result.statusCode).send(result.body);
+  });
+
+  app.get<{ Querystring: { days_ahead?: string } }>("/api/v1/macro/events", async (request, reply) => {
+    const days = Math.min(Math.max(parseInt(request.query.days_ahead ?? "30", 10) || 30, 1), 180);
+    const result = await proxy(app, `/v1/macro/events?days_ahead=${days}`);
+    return reply.code(result.statusCode).send(result.body);
+  });
+
+  app.get("/api/v1/macro/news", async (_request, reply) => {
+    const result = await proxy(app, "/v1/macro/news?limit=20");
+    return reply.code(result.statusCode).send(result.body);
+  });
+
   app.post("/api/v1/strategies/evaluate", async (request, reply) => {
     try {
       const body = (request.body ?? {}) as { symbol?: string; intervals?: string[] };
