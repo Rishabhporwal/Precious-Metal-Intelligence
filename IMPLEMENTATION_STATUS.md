@@ -34,8 +34,17 @@ Last updated: Phase 0 completion.
 
 - `apps/api`: vitest 2/2 passed (`/healthz` 200 + metadata; `/readyz` 503 degraded when quant unreachable)
 - `services/quant-engine`: pytest 2/2 passed (liveness + readiness with unconfigured deps); ruff clean
-- TypeScript builds: `apps/api` tsc clean; Next.js typecheck via Next 16 toolchain
-- Docker: `docker compose up -d --build` — all containers healthy (see LOCAL_SETUP.md for verification commands)
+- TypeScript builds: `apps/api` tsc clean; Next.js 16 production build clean (Turbopack)
+- Docker: `docker compose up -d --build` — **verified live**: all 5 containers healthy/up
+- Live endpoint verification: api `/healthz` ok, `/readyz` ready (quant+postgres+redis up); quant `/health` + `/ready` ready; web `/api/health` ok + homepage HTTP 200
+- Migration test: alembic `upgrade head` → `downgrade base` → `upgrade head` round-trip passed; `alembic_version=0001_baseline`, `platform_metadata` populated, `timescaledb` extension active
+
+## Fixes made during verification
+
+1. compose build `context: ..` → `.` (dockerfile paths resolve relative to context)
+2. web package renamed `web` → `@pmi/web` (pnpm filter was silently matching nothing)
+3. removed `export const dynamic` from web health route (incompatible with Next 16 `cacheComponents`)
+4. alembic env prefers `DATABASE_URL_HOST` for host-run migrations
 
 ## Known issues / limitations
 
