@@ -66,10 +66,23 @@ def run_backtest(
     # 2. leakage gate: verify each detection exists in the prefix view
     verified: list[tuple[int, object]] = []  # (anchor_index, detection)
     excluded = 0
+    skipped_no_levels = 0
+    skipped_at_end = 0
     times = ctx.times
     for d in detections:
         idx = next((i for i, t in enumerate(times) if t == d.anchor_time), None)
-        if idx is None or idx < 60 or idx >= n - 5:
+        if idx is None or idx < 60:
+            continue
+        if idx >= n - 5:
+            # detection at the very end of history — no forward bars to trade
+            skipped_at_end += 1
+            continue
+        levels = d.levels
+        has_entry = "overlap_low" in levels or "entry_low" in levels
+        if not has_entry or levels.get("stop") is None:
+            # incomplete candidate (e.g. no FVG within window) — not tradeable;
+            # counted so silent skips are visible
+            skipped_no_levels += 1
             continue
         if verify_detection_prefix(strategy_id, idx, rows, daily or rows[-40:], hourly or rows[-24:], merged_params):
             verified.append((idx, d))
@@ -197,6 +210,8 @@ def run_backtest(
         "data_end": rows[-1]["market_ts"].isoformat(),
         "detections_found": len(detections),
         "leakage_excluded": excluded,
+        "skipped_no_levels": skipped_no_levels,
+        "skipped_at_end": skipped_at_end,
         "trades_total": len(trades),
         "no_fill_count": sum(1 for t in trades if t["exit_reason"] == "no_fill"),
         "metrics": metrics,
