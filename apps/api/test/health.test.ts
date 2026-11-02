@@ -4,8 +4,8 @@ import { buildApp } from "../src/app.js";
 
 let app: FastifyInstance;
 
-beforeAll(() => {
-  app = buildApp({
+beforeAll(async () => {
+  app = await buildApp({
     port: 0,
     nodeEnv: "test",
     logLevel: "silent",

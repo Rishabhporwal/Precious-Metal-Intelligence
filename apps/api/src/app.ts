@@ -1,9 +1,12 @@
 import Fastify, { type FastifyInstance } from "fastify";
+import cors from "@fastify/cors";
+import websocket from "@fastify/websocket";
 import { registerHealthRoutes } from "./routes/health.js";
 import { registerMarketRoutes } from "./routes/markets.js";
+import { registerWsRoutes } from "./routes/ws.js";
 import { loadConfig, type AppConfig } from "./config.js";
 
-export function buildApp(config: AppConfig = loadConfig()): FastifyInstance {
+export async function buildApp(config: AppConfig = loadConfig()): Promise<FastifyInstance> {
   const app = Fastify({
     logger: {
       level: config.logLevel,
@@ -16,8 +19,20 @@ export function buildApp(config: AppConfig = loadConfig()): FastifyInstance {
 
   app.decorate("config", config);
 
+  // Local-first app: the browser (localhost origins) talks to this gateway.
+  await app.register(cors, {
+    origin: [
+      "http://localhost:3100",
+      "http://127.0.0.1:3100",
+      "http://localhost:3000",
+      "http://127.0.0.1:3000",
+    ],
+  });
+  await app.register(websocket);
+
   registerHealthRoutes(app);
   registerMarketRoutes(app);
+  registerWsRoutes(app);
 
   return app;
 }

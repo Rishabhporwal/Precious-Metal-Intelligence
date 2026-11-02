@@ -183,7 +183,7 @@ export default function MarketsPage() {
           <MarketsData />
         </Suspense>
         <footer className="mt-8 border-t border-neutral-800 pt-4 text-[11px] text-neutral-600">
-          <a className="text-neutral-400 underline" href="/">
+          <a className="text-neutral-400 underline" href="/status">
             ← service status
           </a>
         </footer>
