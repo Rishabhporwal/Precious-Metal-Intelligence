@@ -23,10 +23,12 @@ from strategies.registry import REGISTRY
 # strategies whose detections describe the same price move — used by the
 # confluence dedupe (§7), exposed here for the schema's related-strategy fields
 CORRELATED_GROUPS: dict[str, list[str]] = {
-    "structure": ["smc_mss", "ict_mss"],
-    "sweep": ["smc_liquidity_sweep"],
-    "zones": ["smc_fvg", "smc_order_block", "smc_breaker"],
-    "levels": ["ict_pdh_pdl", "ict_asian_range"],
+    "structure": ["ict_mss"],
+    "sweep": ["smc_liquidity_sweep", "ict_pdh_pdl"],
+    "zones": ["smc_fvg", "smc_order_block", "smc_breaker", "smc_displacement"],
+    "levels": ["ict_asian_range", "ict_fib_ote"],
+    "patterns": ["price_action_failed_breakout"],
+    "wyckoff": ["wyckoff_spring", "wyckoff_upthrust"],
 }
 
 # verdict window per interval: how fresh a detection must be to count as the
