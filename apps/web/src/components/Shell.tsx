@@ -39,6 +39,7 @@ const NAV: { group: string; items: { href: string; label: string; icon: ReactNod
     items: [
       { href: "/analyst", label: "AI Analyst", icon: <IconSpark /> },
       { href: "/backtests", label: "Backtests", icon: <IconClock /> },
+      { href: "/settings", label: "Settings", icon: <IconTarget /> },
       { href: "/status", label: "System", icon: <IconPulse /> },
     ],
   },

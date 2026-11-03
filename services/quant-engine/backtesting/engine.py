@@ -20,7 +20,6 @@ alongside; they are not claims of achievable performance.
 from __future__ import annotations
 
 import logging
-from datetime import datetime
 from typing import Any
 
 from strategies.base import build_context
@@ -131,7 +130,6 @@ def run_backtest(
         entry_low, entry_high = plan["entry_low"], plan["entry_high"]
         stop = plan["stop"]
         direction = "long" if det.direction == "bullish" else "short"
-        entry_ref = entry_low if direction == "long" else entry_high
         risk = plan["risk"]
         sign = 1 if direction == "long" else -1
         t1 = plan["t1"]

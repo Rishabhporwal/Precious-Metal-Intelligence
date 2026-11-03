@@ -11,6 +11,19 @@ from strategies.ict import (
     MarketStructureShiftStrategy,
     PDLpDHStrategy,
 )
+from strategies.ict_p1 import (
+    AmdPowerOfThreeStrategy,
+    IctSilverBulletStrategy,
+    JudasSwingStrategy,
+    LiquidityVoidStrategy,
+    SessionRangeBreakoutStrategy,
+)
+from strategies.quant_strategies import (
+    HiddenDivergenceStrategy,
+    TrendExhaustionStrategy,
+    VolatilityRegimeStrategy,
+    WyckoffSosSowStrategy,
+)
 from strategies.smc import (
     BreakerBlockStrategy,
     DisplacementStrategy,
@@ -39,6 +52,15 @@ ALL_STRATEGIES: list[type[Strategy]] = [
     WyckoffSpringStrategy,
     WyckoffUpthrustStrategy,
     SMTDivergenceStrategy,
+    JudasSwingStrategy,
+    AmdPowerOfThreeStrategy,
+    IctSilverBulletStrategy,
+    SessionRangeBreakoutStrategy,
+    LiquidityVoidStrategy,
+    WyckoffSosSowStrategy,
+    HiddenDivergenceStrategy,
+    TrendExhaustionStrategy,
+    VolatilityRegimeStrategy,
     SweepMssFvgObComposite,
 ]
 

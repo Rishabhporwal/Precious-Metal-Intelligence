@@ -197,7 +197,7 @@ def build_verdict(
             continue
         try:
             raw_date = e["event_date"]
-            d = raw_date if isinstance(raw_date, datetime) else datetime.fromisoformat(str(raw_date).replace("Z", "+00:00"))
+            d = raw_date if isinstance(raw_date, datetime) else datetime.fromisoformat(str(raw_date))
             d_date = d.date() if isinstance(d, datetime) else d
         except ValueError:
             continue

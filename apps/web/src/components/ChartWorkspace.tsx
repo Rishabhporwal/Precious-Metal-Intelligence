@@ -41,9 +41,18 @@ export const LAYERS: Record<string, LayerMeta> = {
   price_action_failed_breakout: { name: "Failed Breakout", tag: "F-BO", category: "Patterns" },
   wyckoff_spring: { name: "Wyckoff Spring", tag: "SPRING", category: "Wyckoff" },
   wyckoff_upthrust: { name: "Wyckoff Upthrust", tag: "UPTHR", category: "Wyckoff" },
+  wyckoff_sos_sow: { name: "Wyckoff SOS / SOW", tag: "SOS", category: "Wyckoff" },
+  ict_judas: { name: "Judas Swing", tag: "JUDAS", category: "Sessions" },
+  ict_amd: { name: "AMD / Power of Three", tag: "AMD", category: "Sessions" },
+  ict_silver_bullet: { name: "ICT Silver Bullet", tag: "SB", category: "Sessions" },
+  ict_session_breakout: { name: "Session Range Breakout", tag: "S-BO", category: "Sessions" },
+  ict_liquidity_void: { name: "Liquidity Void", tag: "VOID", category: "Liquidity" },
+  quant_hidden_div: { name: "Hidden Divergence", tag: "H-DIV", category: "Quantitative" },
+  quant_exhaustion: { name: "Trend Exhaustion", tag: "EXHAUST", category: "Quantitative" },
+  quant_vol_regime: { name: "Volatility Regime", tag: "VOL", category: "Quantitative" },
 };
 
-const CATEGORY_ORDER = ["Market Structure", "Liquidity", "SMC / ICT", "Patterns", "Wyckoff"];
+const CATEGORY_ORDER = ["Market Structure", "Liquidity", "SMC / ICT", "Sessions", "Patterns", "Wyckoff", "Quantitative"];
 
 const EMA_DEFS = [
   { key: "ema20", label: "EMA 20", color: "#7c5cff" },

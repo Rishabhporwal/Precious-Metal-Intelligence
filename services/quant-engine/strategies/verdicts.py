@@ -18,8 +18,6 @@ from __future__ import annotations
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
-from strategies.registry import REGISTRY
-
 # strategies whose detections describe the same price move — used by the
 # confluence dedupe (§7), exposed here for the schema's related-strategy fields
 CORRELATED_GROUPS: dict[str, list[str]] = {
@@ -27,8 +25,9 @@ CORRELATED_GROUPS: dict[str, list[str]] = {
     "sweep": ["smc_liquidity_sweep", "ict_pdh_pdl"],
     "zones": ["smc_fvg", "smc_order_block", "smc_breaker", "smc_displacement"],
     "levels": ["ict_asian_range", "ict_fib_ote"],
-    "patterns": ["price_action_failed_breakout"],
-    "wyckoff": ["wyckoff_spring", "wyckoff_upthrust"],
+    "patterns": ["price_action_failed_breakout", "quant_hidden_div", "quant_exhaustion"],
+    "wyckoff": ["wyckoff_spring", "wyckoff_upthrust", "wyckoff_sos_sow"],
+    "sessions": ["ict_judas", "ict_amd", "ict_silver_bullet", "ict_session_breakout", "ict_liquidity_void", "quant_vol_regime"],
 }
 
 # verdict window per interval: how fresh a detection must be to count as the
