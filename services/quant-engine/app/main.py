@@ -11,6 +11,8 @@ from .api import (
     quant_stats,
     strategies,
     strategy_verdicts,
+    confluence_ep,
+    performance,
     technical,
     trading,
     verdict,
@@ -30,6 +32,8 @@ app.include_router(analyst.router)
 app.include_router(trading.router)
 app.include_router(verdict.router)
 app.include_router(strategy_verdicts.router)
+app.include_router(performance.router)
+app.include_router(confluence_ep.router)
 app.include_router(backtests.router)
 app.include_router(dataquality_ep.router)
 

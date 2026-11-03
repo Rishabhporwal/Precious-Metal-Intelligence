@@ -17,9 +17,18 @@ const NAV: { group: string; items: { href: string; label: string; icon: ReactNod
     ],
   },
   {
-    group: "Market data",
+    group: "Strategy intelligence",
     items: [
       { href: "/chart", label: "Chart", icon: <IconCandle /> },
+      { href: "/strategies", label: "Strategy Analysis", icon: <IconTarget /> },
+      { href: "/performance", label: "Performance", icon: <IconPulse /> },
+      { href: "/confluence", label: "Confluence", icon: <IconTarget /> },
+      { href: "/setups", label: "Trade Ideas", icon: <IconZap /> },
+    ],
+  },
+  {
+    group: "Market data",
+    items: [
       { href: "/markets", label: "Prices", icon: <IconCandle /> },
       { href: "/macro", label: "Economy", icon: <IconGlobe /> },
       { href: "/learn", label: "Learn", icon: <IconSpark /> },
@@ -29,8 +38,6 @@ const NAV: { group: string; items: { href: string; label: string; icon: ReactNod
     group: "Advanced",
     items: [
       { href: "/analyst", label: "AI Analyst", icon: <IconSpark /> },
-      { href: "/strategies", label: "Strategies", icon: <IconTarget /> },
-      { href: "/setups", label: "Trade Ideas", icon: <IconZap /> },
       { href: "/backtests", label: "Backtests", icon: <IconClock /> },
       { href: "/status", label: "System", icon: <IconPulse /> },
     ],

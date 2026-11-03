@@ -26,22 +26,32 @@ class BacktestRequest(BaseModel):
 
 
 @router.post("")
-def run(req: BacktestRequest) -> dict:
-    symbol = req.symbol.upper()
+def run_backtest_for(
+    symbol: str,
+    interval: str,
+    strategy_id: str,
+    limit: int = 4000,
+    spread: float = 0.35,
+    slippage: float = 0.05,
+    oos_fraction: float = 0.4,
+    max_wait_bars: int = 40,
+) -> dict:
+    """Shared backtest runner: fetch candles, run, persist, return result."""
+    symbol = symbol.upper()
     with get_pool().connection() as conn:
         inst = store.get_instrument_by_symbol(conn, symbol)
         if inst is None:
             raise HTTPException(status_code=404, detail=f"unknown instrument {symbol}")
         if not inst["enabled"]:
             raise HTTPException(status_code=409, detail=f"instrument {symbol} is not enabled")
-        rows = store.get_candles(conn, inst["id"], CandleInterval(req.interval), limit=4000)
+        rows = store.get_candles(conn, inst["id"], CandleInterval(interval), limit=limit)
         daily = store.get_candles(conn, inst["id"], CandleInterval.DAY_1, limit=400)
         hourly = store.get_candles(conn, inst["id"], CandleInterval.HOUR_1, limit=72)
 
     result = run_backtest(
-        symbol, req.interval, req.strategy_id, rows=rows, daily=daily, hourly=hourly,
-        costs={"spread": req.spread, "slippage": req.slippage},
-        max_wait_bars=req.max_wait_bars, oos_fraction=req.oos_fraction,
+        symbol, interval, strategy_id, rows=rows, daily=daily, hourly=hourly,
+        costs={"spread": spread, "slippage": slippage},
+        max_wait_bars=max_wait_bars, oos_fraction=oos_fraction,
     )
     if "error" in result:
         raise HTTPException(status_code=409, detail=result["error"])
@@ -56,7 +66,7 @@ def run(req: BacktestRequest) -> dict:
             RETURNING id
             """,
             (
-                symbol, req.interval, req.strategy_id, result.get("algo_version") or "",
+                symbol, interval, strategy_id, result.get("algo_version") or "",
                 json.dumps({}), json.dumps(result["cost_model"]),
                 result["data_start"], result["data_end"],
                 json.dumps(result["metrics"]), json.dumps(result["oos_metrics"]),
@@ -83,13 +93,21 @@ def run(req: BacktestRequest) -> dict:
                         SELECT data_start + (data_end - data_start) * %s AS split_time
                         FROM backtest_runs WHERE id = %s
                         """,
-                        (req.oos_fraction, run_id),
+                        (oos_fraction, run_id),
                     ).fetchone()["split_time"] else "is",
                 ),
             )
 
     return {"run_id": run_id, **{k: v for k, v in result.items() if k != "trades"},
             "trades": result["trades"][:20]}
+
+
+def run(req: BacktestRequest) -> dict:
+    return run_backtest_for(
+        symbol=req.symbol.upper(), interval=req.interval, strategy_id=req.strategy_id,
+        limit=4000, spread=req.spread, slippage=req.slippage,
+        oos_fraction=req.oos_fraction, max_wait_bars=req.max_wait_bars,
+    )
 
 
 @router.get("")

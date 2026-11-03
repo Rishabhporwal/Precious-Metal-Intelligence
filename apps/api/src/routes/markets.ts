@@ -328,6 +328,58 @@ export async function registerMarketRoutes(app: FastifyInstance): Promise<void> 
   });
 
   app.get<{ Querystring: { symbol?: string; interval?: string } }>(
+    "/api/v1/confluence/latest",
+    async (request, reply) => {
+      const symbol = ((request.query.symbol as string) ?? "XAUUSD").toUpperCase();
+      const interval = ((request.query.interval as string) ?? "1h").toLowerCase();
+      if (!SYMBOL_RE.test(symbol) || !INTERVAL_RE.test(interval)) {
+        return reply.code(400).send({
+          error: { code: "INVALID_PARAMS", message: "invalid symbol or interval" },
+        } satisfies ApiErrorResponse);
+      }
+      const result = await proxy(app, `/v1/confluence/latest?symbol=${symbol}&interval=${interval}`);
+      return reply.code(result.statusCode).send(result.body);
+    },
+  );
+
+  app.get<{ Querystring: { symbol?: string; interval?: string } }>(
+    "/api/v1/performance/summary",
+    async (request, reply) => {
+      const symbol = ((request.query.symbol as string) ?? "XAUUSD").toUpperCase();
+      const interval = ((request.query.interval as string) ?? "1h").toLowerCase();
+      if (!SYMBOL_RE.test(symbol) || !INTERVAL_RE.test(interval)) {
+        return reply.code(400).send({
+          error: { code: "INVALID_PARAMS", message: "invalid symbol or interval" },
+        } satisfies ApiErrorResponse);
+      }
+      const result = await proxy(app, `/v1/performance/summary?symbol=${symbol}&interval=${interval}`);
+      return reply.code(result.statusCode).send(result.body);
+    },
+  );
+
+  app.post("/api/v1/performance/evaluate", async (request, reply) => {
+    try {
+      const q = (request.query as { symbol?: string; interval?: string; limit?: string }) ?? {};
+      const params = new URLSearchParams({
+        symbol: (q.symbol ?? "XAUUSD").toUpperCase(),
+        interval: (q.interval ?? "1h").toLowerCase(),
+        limit: q.limit ?? "1200",
+      });
+      const res = await fetch(
+        `${app.config.quantInternalUrl}/v1/performance/evaluate?${params.toString()}`,
+        { method: "POST", signal: AbortSignal.timeout(1800000) },
+      );
+      const payload = await res.json().catch(() => null);
+      return reply.code(res.ok ? 200 : res.status).send(payload);
+    } catch (err) {
+      app.log.error({ err }, "performance evaluation failed");
+      return reply.code(502).send({
+        error: { code: "UPSTREAM_ERROR", message: "performance evaluation failed" },
+      } satisfies ApiErrorResponse);
+    }
+  });
+
+  app.get<{ Querystring: { symbol?: string; interval?: string } }>(
     "/api/v1/strategy-verdicts/latest",
     async (request, reply) => {
       const symbol = ((request.query.symbol as string) ?? "XAUUSD").toUpperCase();

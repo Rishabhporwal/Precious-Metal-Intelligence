@@ -20,6 +20,8 @@ alongside; they are not claims of achievable performance.
 from __future__ import annotations
 
 import logging
+from datetime import datetime
+from typing import Any
 
 from strategies.base import build_context
 from strategies.registry import REGISTRY
@@ -30,6 +32,35 @@ from .metrics import compute_metrics
 logger = logging.getLogger("backtest")
 
 DEFAULT_COSTS = {"spread": 0.35, "slippage": 0.05, "commission": 0.0}
+
+
+def _plan_from_detection(det: Any, anchor_close: float, atr: float | None) -> dict | None:
+    """Generic entry/stop plan for any strategy's detection (per-strategy backtests).
+
+    Uses the detection's own levels when present (overlap/entry zone, stop);
+    falls back to a documented ATR plan: entry at the anchor close, stop at
+    1.5×ATR beyond it, targets at 1R/2R. Deterministic, no future data.
+    """
+    levels = det.levels or {}
+    sign = 1 if det.direction == "bullish" else -1
+    zone_lo = levels.get("overlap_low", levels.get("entry_low"))
+    zone_hi = levels.get("overlap_high", levels.get("entry_high"))
+    if zone_lo is not None and zone_hi is not None:
+        entry_low, entry_high = float(zone_lo), float(zone_hi)
+    else:
+        w = 0.25 * (atr or anchor_close * 0.006)
+        entry_low, entry_high = anchor_close - sign * w, anchor_close + sign * w
+        entry_low, entry_high = min(entry_low, entry_high), max(entry_low, entry_high)
+
+    stop = levels.get("stop")
+    if stop is None:
+        stop = entry_low - 1.5 * (atr or anchor_close * 0.006) if sign > 0 else entry_high + 1.5 * (atr or anchor_close * 0.006)
+    stop = float(stop)
+    entry_ref = entry_low if sign > 0 else entry_high
+    risk = abs(entry_ref - stop)
+    if risk <= 0:
+        return None
+    return {"entry_low": entry_low, "entry_high": entry_high, "stop": stop, "t1": entry_ref + sign * risk, "t2": entry_ref + sign * 2 * risk, "risk": risk}
 
 
 def run_backtest(
@@ -77,11 +108,9 @@ def run_backtest(
             # detection at the very end of history — no forward bars to trade
             skipped_at_end += 1
             continue
-        levels = d.levels
-        has_entry = "overlap_low" in levels or "entry_low" in levels
-        if not has_entry or levels.get("stop") is None:
-            # incomplete candidate (e.g. no FVG within window) — not tradeable;
-            # counted so silent skips are visible
+        plan = _plan_from_detection(d, float(rows[idx]["close"]), None)
+        if plan is None:
+            # no usable plan from this detection's levels — counted, not silent
             skipped_no_levels += 1
             continue
         if verify_detection_prefix(strategy_id, idx, rows, daily or rows[-40:], hourly or rows[-24:], merged_params):
@@ -96,25 +125,17 @@ def run_backtest(
     for anchor_idx, det in verified:
         if anchor_idx <= open_until:
             continue  # skip overlapping signals
-        levels = det.levels
-        if "overlap_low" in levels:
-            entry_low, entry_high = float(levels["overlap_low"]), float(levels["overlap_high"])
-        elif "entry_low" in levels:
-            entry_low, entry_high = float(levels["entry_low"]), float(levels["entry_high"])
-        else:
+        plan = _plan_from_detection(det, float(ctx.closes[anchor_idx]), None)
+        if plan is None:
             continue
-        stop = levels.get("stop")
-        if stop is None:
-            continue
-        stop = float(stop)
+        entry_low, entry_high = plan["entry_low"], plan["entry_high"]
+        stop = plan["stop"]
         direction = "long" if det.direction == "bullish" else "short"
         entry_ref = entry_low if direction == "long" else entry_high
-        risk = abs(entry_ref - stop)
-        if risk <= 0:
-            continue
+        risk = plan["risk"]
         sign = 1 if direction == "long" else -1
-        t1 = entry_ref + sign * 1.0 * risk
-        t2 = entry_ref + sign * 2.0 * risk
+        t1 = plan["t1"]
+        t2 = plan["t2"]
 
         # entry wait: touch the zone after the anchor
         entry_idx = None
