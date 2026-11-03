@@ -13,6 +13,7 @@ Failures log and never crash the loop; nothing is fabricated.
 
 from __future__ import annotations
 
+import json
 import logging
 import os
 import time
@@ -39,6 +40,7 @@ CALENDAR_INTERVAL = int(os.environ.get("CALENDAR_INTERVAL_SECONDS", str(12 * 360
 CFTC_INTERVAL = int(os.environ.get("CFTC_INTERVAL_SECONDS", str(12 * 3600)))
 NEWS_INTERVAL = int(os.environ.get("NEWS_INTERVAL_SECONDS", "1800"))
 ANALYSIS_INTERVAL = int(os.environ.get("ANALYSIS_INTERVAL_SECONDS", str(12 * 3600)))
+VERDICT_INTERVAL = int(os.environ.get("VERDICT_INTERVAL_SECONDS", str(6 * 3600)))
 TRADING_INTERVAL = int(os.environ.get("TRADING_INTERVAL_SECONDS", "120"))
 
 
@@ -105,6 +107,25 @@ def sync_analysis() -> None:
     asyncio.run(_run())
 
 
+def sync_verdict() -> None:
+    """Daily Verdict: fuse everything into one call (deterministic + LLM narrative)."""
+    import urllib.request
+
+    req = urllib.request.Request(
+        "http://localhost:8001/v1/verdict/generate?symbol=XAUUSD", method="POST"
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=600) as resp:
+            body = json.loads(resp.read())
+        logger.info(
+            "verdict: %s (%s) plan=%s llm=%s",
+            body.get("direction"), body.get("confidence"),
+            bool(body.get("plan")), bool(body.get("narrative")),
+        )
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("verdict generation failed: %s", exc)
+
+
 def sync_trading() -> None:
     """Paper-trade SL/TP monitoring, alert evaluation, setup evaluation (cheap, local)."""
     from app import alerts, paper
@@ -147,6 +168,7 @@ def run() -> None:
     from app import paper as paper_mod
 
     sync_analysis()
+    sync_verdict()
     paper_mod.ensure_default_account()
     last["trading"] = time.monotonic()
 
@@ -169,6 +191,9 @@ def run() -> None:
             if now - last.get("analysis", 0) >= ANALYSIS_INTERVAL:
                 sync_analysis()
                 last["analysis"] = now
+            if now - last.get("verdict", 0) >= VERDICT_INTERVAL:
+                sync_verdict()
+                last["verdict"] = now
             if now - last.get("trading", 0) >= TRADING_INTERVAL:
                 sync_trading()
                 last["trading"] = now

@@ -12,6 +12,7 @@ from .api import (
     strategies,
     technical,
     trading,
+    verdict,
 )
 from .config import get_settings
 
@@ -26,6 +27,7 @@ app.include_router(macro.router)
 app.include_router(quant_stats.router)
 app.include_router(analyst.router)
 app.include_router(trading.router)
+app.include_router(verdict.router)
 app.include_router(backtests.router)
 app.include_router(dataquality_ep.router)
 

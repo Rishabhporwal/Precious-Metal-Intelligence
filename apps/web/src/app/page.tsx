@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import Link from "next/link";
 import { LiveTicker } from "@/components/LiveTicker";
+import { VerdictCard, VerdictSkeleton } from "@/components/VerdictCard";
 
 const API_INTERNAL_URL = process.env.API_INTERNAL_URL ?? "http://localhost:8000";
 
@@ -105,10 +106,16 @@ async function Brief() {
 
   return (
     <div className="space-y-4">
-      {/* Plain-English headline */}
+      {/* THE CALL — verdict first */}
+      <VerdictCard />
+
+      {/* Market context below */}
+      <div className="flex items-center gap-2 px-1">
+        <span className="card-title">Market context</span>
+      </div>
       <div className="brief-card p-6">
         <div className="flex items-center gap-2">
-          <span className="pill pill-gold">Today's Gold Brief</span>
+          <span className="pill">Market brief</span>
           {analysis?.generated_at && (
             <span className="text-[11px] text-faint">
               analysis from {analysis.generated_at.slice(5, 16).replace("T", " ")} UTC
@@ -200,7 +207,7 @@ export default function HomePage() {
           <p className="page-sub">Here's what gold is doing — in plain English.</p>
         </header>
 
-        <Suspense fallback={<BriefSkeleton />}>
+        <Suspense fallback={<VerdictSkeleton />}>
           <Brief />
         </Suspense>
 

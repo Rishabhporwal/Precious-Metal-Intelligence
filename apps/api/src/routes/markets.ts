@@ -316,6 +316,34 @@ export async function registerMarketRoutes(app: FastifyInstance): Promise<void> 
     return reply.code(res.ok ? 200 : res.status).send(payload);
   });
 
+  app.get<{ Querystring: { symbol?: string } }>("/api/v1/verdict/latest", async (request, reply) => {
+    const symbol = ((request.query.symbol as string) ?? "XAUUSD").toUpperCase();
+    if (!SYMBOL_RE.test(symbol)) {
+      return reply.code(400).send({
+        error: { code: "INVALID_SYMBOL", message: "symbol must be 3-8 uppercase letters" },
+      } satisfies ApiErrorResponse);
+    }
+    const result = await proxy(app, `/v1/verdict/latest?symbol=${symbol}`);
+    return reply.code(result.statusCode).send(result.body);
+  });
+
+  app.post("/api/v1/verdict/generate", async (request, reply) => {
+    try {
+      const q = (request.query as { symbol?: string })?.symbol ?? "XAUUSD";
+      const res = await fetch(
+        `${app.config.quantInternalUrl}/v1/verdict/generate?symbol=${encodeURIComponent(q.toUpperCase())}`,
+        { method: "POST", signal: AbortSignal.timeout(600000) },
+      );
+      const payload = await res.json().catch(() => null);
+      return reply.code(res.ok ? 200 : res.status).send(payload);
+    } catch (err) {
+      app.log.error({ err }, "verdict generation failed");
+      return reply.code(502).send({
+        error: { code: "UPSTREAM_ERROR", message: "verdict generation failed" },
+      } satisfies ApiErrorResponse);
+    }
+  });
+
   app.get<{ Querystring: { symbol?: string } }>("/api/v1/data/quality", async (request, reply) => {
     const symbol = ((request.query.symbol as string) ?? "XAUUSD").toUpperCase();
     if (!SYMBOL_RE.test(symbol)) {
