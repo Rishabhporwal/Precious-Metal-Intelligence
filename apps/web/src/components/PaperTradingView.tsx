@@ -84,11 +84,11 @@ export function PaperTradingView() {
   };
 
   if (error && !account) {
-    return <p className="rounded-lg border border-red-900 bg-red-950/40 p-4 text-xs text-red-300">Paper API error: {error}</p>;
+    return <p className="card p-5 border-[rgba(246,70,93,0.3)] bg-[var(--down-dim)] text-xs text-down">Paper API error: {error}</p>;
   }
-  if (!account) return <div className="h-40 animate-pulse rounded-lg border border-neutral-800 bg-neutral-900/40" />;
+  if (!account) return <div className="h-40 animate-pulse card animate-pulse opacity-60" />;
 
-  const pnlColor = (v: number | null) => (v == null ? "text-neutral-400" : v >= 0 ? "text-emerald-400" : "text-red-400");
+  const pnlColor = (v: number | null) => (v == null ? "text-muted" : v >= 0 ? "text-up" : "text-down");
 
   return (
     <div className="space-y-4">
@@ -99,53 +99,53 @@ export function PaperTradingView() {
           ["Unrealized", account.unrealized_pnl >= 0 ? `+$${account.unrealized_pnl.toFixed(2)}` : `-$${Math.abs(account.unrealized_pnl).toFixed(2)}`],
           ["Win rate", account.stats.win_rate != null ? `${(account.stats.win_rate * 100).toFixed(0)}% (${account.stats.win_count}/${account.stats.closed_count})` : "—"],
         ].map(([k, v]) => (
-          <div key={k} className="rounded-lg border border-neutral-800 bg-neutral-900/60 p-3">
-            <div className="text-[10px] text-neutral-500">{k}</div>
-            <div className={`mt-1 font-mono text-lg font-semibold ${k !== "Equity" ? pnlColor(k === "Realized P&L" ? account.realized_pnl : account.unrealized_pnl) : "text-neutral-100"}`}>
+          <div key={k} className="card bg-white/[0.02] p-3">
+            <div className="text-[10px] text-muted">{k}</div>
+            <div className={`mt-1 num text-lg font-semibold ${k !== "Equity" ? pnlColor(k === "Realized P&L" ? account.realized_pnl : account.unrealized_pnl) : "text-ink"}`}>
               {v}
             </div>
           </div>
         ))}
       </div>
 
-      <div className="rounded-lg border border-neutral-800 bg-neutral-900/60 p-4">
-        <h3 className="text-[10px] font-semibold uppercase tracking-widest text-neutral-500">New paper trade (simulated)</h3>
-        <div className="mt-2 flex flex-wrap items-center gap-2 font-mono text-xs">
+      <div className="card p-5">
+        <h3 className="card-title text-muted">New paper trade (simulated)</h3>
+        <div className="mt-2 flex flex-wrap items-center gap-2 num text-xs">
           <select
             value={form.direction}
             onChange={(e) => setForm({ ...form, direction: e.target.value })}
-            className="rounded border border-neutral-700 bg-neutral-900 px-2 py-1"
+            className="rounded border border-line bg-white/[0.02] px-2 py-1"
           >
             <option value="long">long</option>
             <option value="short">short</option>
           </select>
           <input placeholder="size oz (opt)" value={form.size} onChange={(e) => setForm({ ...form, size: e.target.value })}
-            className="w-28 rounded border border-neutral-700 bg-neutral-900 px-2 py-1" />
+            className="w-28 rounded border border-line bg-white/[0.02] px-2 py-1" />
           <input placeholder="stop (opt)" value={form.stop} onChange={(e) => setForm({ ...form, stop: e.target.value })}
-            className="w-28 rounded border border-neutral-700 bg-neutral-900 px-2 py-1" />
+            className="w-28 rounded border border-line bg-white/[0.02] px-2 py-1" />
           <input placeholder="target (opt)" value={form.target} onChange={(e) => setForm({ ...form, target: e.target.value })}
-            className="w-28 rounded border border-neutral-700 bg-neutral-900 px-2 py-1" />
+            className="w-28 rounded border border-line bg-white/[0.02] px-2 py-1" />
           <button onClick={open} disabled={busy}
-            className="rounded border border-neutral-600 px-3 py-1 hover:bg-neutral-800 disabled:opacity-50">
+            className="rounded border border-line px-3 py-1 hover:bg-white/[0.06] disabled:opacity-50">
             {busy ? "…" : "open (market)"}
           </button>
-          <span className="text-[10px] text-neutral-600">
+          <span className="text-[10px] text-faint">
             no size = risk-based sizing (1% of equity ÷ stop distance)
           </span>
         </div>
       </div>
 
       {account.open_positions.length > 0 && (
-        <div className="overflow-x-auto rounded-lg border border-neutral-800">
-          <table className="w-full text-left font-mono text-[11px]">
-            <thead className="bg-neutral-900 text-neutral-500">
+        <div className="overflow-x-auto card">
+          <table className="w-full text-left num text-[11px]">
+            <thead className="bg-white/[0.02] text-muted">
               <tr>{["#", "Dir", "Size", "Entry", "Stop", "Target", "Now", "P&L", ""].map((h) => <th key={h} className="px-3 py-2">{h}</th>)}</tr>
             </thead>
             <tbody>
               {account.open_positions.map((t) => (
-                <tr key={t.id} className="border-t border-neutral-800">
-                  <td className="px-3 py-2 text-neutral-500">{t.id}</td>
-                  <td className={t.direction === "long" ? "px-3 py-2 text-emerald-400" : "px-3 py-2 text-red-400"}>{t.direction}</td>
+                <tr key={t.id} className="border-t border-line">
+                  <td className="px-3 py-2 text-muted">{t.id}</td>
+                  <td className={t.direction === "long" ? "px-3 py-2 text-up" : "px-3 py-2 text-down"}>{t.direction}</td>
                   <td className="px-3 py-2">{t.size}</td>
                   <td className="px-3 py-2">{t.entry_price?.toFixed(2)}</td>
                   <td className="px-3 py-2">{t.stop?.toFixed(2) ?? "—"}</td>
@@ -153,7 +153,7 @@ export function PaperTradingView() {
                   <td className="px-3 py-2">{t.current_price?.toFixed(2)}</td>
                   <td className={`px-3 py-2 ${pnlColor(t.unrealized_or_realized_pnl)}`}>{t.unrealized_or_realized_pnl?.toFixed(2)}</td>
                   <td className="px-3 py-2">
-                    <button onClick={() => close(t.id)} disabled={busy} className="rounded border border-neutral-700 px-2 py-0.5 text-[10px] hover:bg-neutral-800">close</button>
+                    <button onClick={() => close(t.id)} disabled={busy} className="rounded border border-line px-2 py-0.5 text-[10px] hover:bg-white/[0.06]">close</button>
                   </td>
                 </tr>
               ))}
@@ -163,19 +163,19 @@ export function PaperTradingView() {
       )}
 
       {account.closed_trades.length > 0 && (
-        <div className="overflow-x-auto rounded-lg border border-neutral-800">
-          <table className="w-full text-left font-mono text-[11px]">
-            <thead className="bg-neutral-900 text-neutral-500">
+        <div className="overflow-x-auto card">
+          <table className="w-full text-left num text-[11px]">
+            <thead className="bg-white/[0.02] text-muted">
               <tr>{["#", "Dir", "Entry", "Exit", "Reason", "P&L"].map((h) => <th key={h} className="px-3 py-2">{h}</th>)}</tr>
             </thead>
             <tbody>
               {account.closed_trades.map((t) => (
-                <tr key={t.id} className="border-t border-neutral-800">
-                  <td className="px-3 py-2 text-neutral-500">{t.id}</td>
+                <tr key={t.id} className="border-t border-line">
+                  <td className="px-3 py-2 text-muted">{t.id}</td>
                   <td className="px-3 py-2">{t.direction}</td>
                   <td className="px-3 py-2">{t.entry_price?.toFixed(2)}</td>
                   <td className="px-3 py-2">{t.exit_price?.toFixed(2)}</td>
-                  <td className="px-3 py-2 text-neutral-500">{t.exit_reason}</td>
+                  <td className="px-3 py-2 text-muted">{t.exit_reason}</td>
                   <td className={`px-3 py-2 ${pnlColor(t.unrealized_or_realized_pnl)}`}>{t.unrealized_or_realized_pnl?.toFixed(2)}</td>
                 </tr>
               ))}

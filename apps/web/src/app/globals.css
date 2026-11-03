@@ -1,20 +1,368 @@
 @import "tailwindcss";
 
-/* PMI is a dark-theme terminal by default (master spec: dark theme default). */
+/* ============================================================
+   PMI Design System — 2026 institutional dark terminal
+   Base language: Linear-style luminance-stepped dark surfaces,
+   single chromatic accent (gold = precious-metal identity),
+   trading green/red semantics, Geist + Geist Mono.
+   ============================================================ */
+
 :root {
-  --background: #0a0a0a;
-  --foreground: #ededed;
+  /* surfaces — luminance steps, never solid on dark */
+  --bg-canvas: #08090a;
+  --bg-panel: #0f1011;
+  --bg-surface: #191a1b;
+  --bg-hover: rgba(255, 255, 255, 0.04);
+  --bg-active: rgba(255, 255, 255, 0.06);
+
+  /* text */
+  --ink: #f7f8f8;
+  --ink-secondary: #d0d6e0;
+  --ink-muted: #8a8f98;
+  --ink-faint: #62666d;
+
+  /* accent — PMI gold */
+  --gold: #e6b422;
+  --gold-deep: #d4a017;
+  --gold-bright: #f0c04a;
+  --gold-dim: rgba(230, 180, 34, 0.12);
+
+  /* trading semantics */
+  --up: #10b981;
+  --up-dim: rgba(16, 185, 129, 0.12);
+  --down: #f6465d;
+  --down-dim: rgba(246, 70, 93, 0.12);
+  --warn: #f59e0b;
+  --warn-dim: rgba(245, 158, 11, 0.12);
+
+  /* borders — whisper-thin translucent white */
+  --line: rgba(255, 255, 255, 0.08);
+  --line-subtle: rgba(255, 255, 255, 0.05);
+  --line-strong: rgba(255, 255, 255, 0.14);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-canvas: var(--bg-canvas);
+  --color-panel: var(--bg-panel);
+  --color-surface: var(--bg-surface);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-secondary);
+  --color-muted: var(--ink-muted);
+  --color-faint: var(--ink-faint);
+  --color-gold: var(--gold);
+  --color-gold-deep: var(--gold-deep);
+  --color-gold-dim: var(--gold-dim);
+  --color-up: var(--up);
+  --color-down: var(--down);
+  --color-warn: var(--warn);
+  --color-line: var(--line);
+  --color-line-subtle: var(--line-subtle);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--bg-canvas);
+  color: var(--ink);
   font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+  font-feature-settings: "cv01", "ss03";
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: rgba(230, 180, 34, 0.25);
+}
+
+/* --- scrollbars: thin, low-noise --- */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
+}
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* ============================================================
+   Component classes
+   ============================================================ */
+
+/* Cards: translucent surfaces with hairline borders */
+.card {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.card-elevated {
+  background: var(--bg-surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+}
+.card-hover {
+  transition: background 150ms ease, border-color 150ms ease;
+}
+.card-hover:hover {
+  background: rgba(255, 255, 255, 0.035);
+  border-color: var(--line-strong);
+}
+
+/* Section header inside cards */
+.card-title {
+  font-size: 11px;
+  font-weight: 590;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+/* Pills */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 10px;
+  border-radius: 9999px;
+  border: 1px solid var(--line);
+  font-size: 11px;
+  font-weight: 510;
+  color: var(--ink-secondary);
+  white-space: nowrap;
+}
+.pill-gold {
+  background: var(--gold-dim);
+  border-color: rgba(230, 180, 34, 0.3);
+  color: var(--gold-bright);
+}
+.pill-up {
+  background: var(--up-dim);
+  border-color: rgba(16, 185, 129, 0.3);
+  color: var(--up);
+}
+.pill-down {
+  background: var(--down-dim);
+  border-color: rgba(246, 70, 93, 0.3);
+  color: var(--down);
+}
+.pill-warn {
+  background: var(--warn-dim);
+  border-color: rgba(245, 158, 11, 0.3);
+  color: var(--warn);
+}
+
+/* Status dot */
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 9999px;
+  display: inline-block;
+}
+.dot-live {
+  background: var(--up);
+  box-shadow: 0 0 6px rgba(16, 185, 129, 0.7);
+  animation: pulse 2.4s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 510;
+  transition: all 150ms ease;
+  cursor: pointer;
+  border: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--ink-secondary);
+}
+.btn:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--ink);
+}
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.btn-gold {
+  background: var(--gold-deep);
+  border-color: var(--gold-deep);
+  color: #0c0a03;
+  font-weight: 590;
+}
+.btn-gold:hover {
+  background: var(--gold-bright);
+  border-color: var(--gold-bright);
+  color: #0c0a03;
+}
+.btn-sm {
+  padding: 4px 10px;
+  font-size: 12px;
+  border-radius: 6px;
+}
+
+/* Inputs */
+.input {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 13px;
+  color: var(--ink);
+  outline: none;
+  transition: border-color 150ms ease, background 150ms ease;
+}
+.input:focus {
+  border-color: rgba(230, 180, 34, 0.5);
+  background: rgba(255, 255, 255, 0.05);
+}
+.input::placeholder {
+  color: var(--ink-faint);
+}
+
+/* Data tables: hairline rows, no zebra noise */
+.data-table {
+  width: 100%;
+  text-align: left;
+  border-collapse: collapse;
+  font-size: 12.5px;
+}
+.data-table thead th {
+  font-size: 10.5px;
+  font-weight: 590;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+.data-table tbody td {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--line-subtle);
+  color: var(--ink-secondary);
+  white-space: nowrap;
+}
+.data-table tbody tr:last-child td {
+  border-bottom: none;
+}
+.data-table tbody tr:hover td {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+/* Numeric data — always mono with tabular figures */
+.num {
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+/* Metric display */
+.metric-xl {
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  font-weight: 500;
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+
+/* Page scaffold */
+.page {
+  padding: 28px 32px 48px;
+  max-width: 1200px;
+}
+@media (max-width: 1023px) {
+  .page {
+    padding: 20px 16px 40px;
+  }
+}
+.page-title {
+  font-size: 26px;
+  font-weight: 590;
+  letter-spacing: -0.7px;
+  color: var(--ink);
+  line-height: 1.1;
+}
+.page-sub {
+  font-size: 13px;
+  color: var(--ink-muted);
+  margin-top: 4px;
+}
+.section-gap {
+  margin-top: 20px;
+}
+
+/* Nav item */
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 6px 10px;
+  margin: 1px 8px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 510;
+  color: var(--ink-muted);
+  transition: background 120ms ease, color 120ms ease;
+}
+.nav-item:hover {
+  background: var(--bg-hover);
+  color: var(--ink);
+}
+.nav-item-active {
+  background: rgba(230, 180, 34, 0.1);
+  color: var(--gold-bright);
+}
+.nav-item-active:hover {
+  background: rgba(230, 180, 34, 0.14);
+  color: var(--gold-bright);
+}
+.nav-group {
+  font-size: 10px;
+  font-weight: 590;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+  padding: 16px 18px 6px;
+}
+
+/* Focus rings */
+a:focus-visible,
+button:focus-visible,
+input:focus-visible {
+  outline: 2px solid rgba(230, 180, 34, 0.5);
+  outline-offset: 2px;
+}
+
+/* Subtle entrance */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.rise {
+  animation: rise 300ms ease both;
 }

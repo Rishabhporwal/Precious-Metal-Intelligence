@@ -99,51 +99,51 @@ export function AlertsView() {
 
   return (
     <div className="space-y-4">
-      <div className="rounded-lg border border-neutral-800 bg-neutral-900/60 p-4">
-        <h3 className="text-[10px] font-semibold uppercase tracking-widest text-neutral-500">New alert rule</h3>
-        <div className="mt-2 flex flex-wrap items-center gap-2 font-mono text-xs">
+      <div className="card p-5">
+        <h3 className="card-title text-muted">New alert rule</h3>
+        <div className="mt-2 flex flex-wrap items-center gap-2 num text-xs">
           <select value={form.kind} onChange={(e) => setForm({ ...form, kind: e.target.value })}
-            className="rounded border border-neutral-700 bg-neutral-900 px-2 py-1">
+            className="rounded border border-line bg-white/[0.02] px-2 py-1">
             {KINDS.map(([v, l]) => <option key={v} value={v}>{l}</option>)}
           </select>
           {(form.kind === "price_above" || form.kind === "price_below") && (
             <input placeholder="price level" value={form.level} onChange={(e) => setForm({ ...form, level: e.target.value })}
-              className="w-28 rounded border border-neutral-700 bg-neutral-900 px-2 py-1" />
+              className="w-28 rounded border border-line bg-white/[0.02] px-2 py-1" />
           )}
           <select value={form.severity} onChange={(e) => setForm({ ...form, severity: e.target.value })}
-            className="rounded border border-neutral-700 bg-neutral-900 px-2 py-1">
+            className="rounded border border-line bg-white/[0.02] px-2 py-1">
             <option value="info">info</option>
             <option value="warning">warning</option>
             <option value="critical">critical</option>
           </select>
           <input placeholder="cooldown s" value={form.cooldown} onChange={(e) => setForm({ ...form, cooldown: e.target.value })}
-            className="w-24 rounded border border-neutral-700 bg-neutral-900 px-2 py-1" />
-          <button onClick={create} className="rounded border border-neutral-600 px-3 py-1 hover:bg-neutral-800">add rule</button>
-          <button onClick={evaluate} className="rounded border border-neutral-600 px-3 py-1 hover:bg-neutral-800">evaluate now</button>
+            className="w-24 rounded border border-line bg-white/[0.02] px-2 py-1" />
+          <button onClick={create} className="rounded border border-line px-3 py-1 hover:bg-white/[0.06]">add rule</button>
+          <button onClick={evaluate} className="rounded border border-line px-3 py-1 hover:bg-white/[0.06]">evaluate now</button>
         </div>
-        <p className="mt-2 text-[10px] text-neutral-600">
+        <p className="mt-2 text-[10px] text-faint">
           Delivery: Telegram (configure TELEGRAM_BOT_TOKEN + TELEGRAM_CHAT_ID in .env) + browser
           notifications while this page is open. Cooldowns prevent repeated firing.
         </p>
       </div>
 
       {rules.length > 0 && (
-        <div className="overflow-x-auto rounded-lg border border-neutral-800">
-          <table className="w-full text-left font-mono text-[11px]">
-            <thead className="bg-neutral-900 text-neutral-500">
+        <div className="overflow-x-auto card">
+          <table className="w-full text-left num text-[11px]">
+            <thead className="bg-white/[0.02] text-muted">
               <tr>{["#", "Kind", "Symbol", "Params", "Severity", "Cooldown", ""].map((h) => <th key={h} className="px-3 py-2">{h}</th>)}</tr>
             </thead>
             <tbody>
               {rules.map((r) => (
-                <tr key={r.id} className="border-t border-neutral-800">
-                  <td className="px-3 py-2 text-neutral-500">{r.id}</td>
-                  <td className="px-3 py-2 text-neutral-200">{r.kind}</td>
+                <tr key={r.id} className="border-t border-line">
+                  <td className="px-3 py-2 text-muted">{r.id}</td>
+                  <td className="px-3 py-2 text-ink-soft">{r.kind}</td>
                   <td className="px-3 py-2">{r.symbol}</td>
-                  <td className="px-3 py-2 text-neutral-400">{JSON.stringify(r.params)}</td>
+                  <td className="px-3 py-2 text-muted">{JSON.stringify(r.params)}</td>
                   <td className="px-3 py-2">{r.severity}</td>
-                  <td className="px-3 py-2 text-neutral-500">{r.cooldown_seconds}s</td>
+                  <td className="px-3 py-2 text-muted">{r.cooldown_seconds}s</td>
                   <td className="px-3 py-2">
-                    <button onClick={() => remove(r.id)} className="rounded border border-neutral-700 px-2 py-0.5 text-[10px] hover:bg-neutral-800">delete</button>
+                    <button onClick={() => remove(r.id)} className="rounded border border-line px-2 py-0.5 text-[10px] hover:bg-white/[0.06]">delete</button>
                   </td>
                 </tr>
               ))}
@@ -154,13 +154,13 @@ export function AlertsView() {
 
       {events.length > 0 && (
         <div className="space-y-1">
-          <h3 className="text-[10px] font-semibold uppercase tracking-widest text-neutral-500">Recent alert events</h3>
+          <h3 className="card-title text-muted">Recent alert events</h3>
           {events.map((e) => (
-            <div key={e.id} className="rounded border border-neutral-800 bg-neutral-900/40 px-3 py-2 font-mono text-[10px]">
-              <span className={e.severity === "critical" ? "text-red-400" : e.severity === "warning" ? "text-amber-400" : "text-neutral-300"}>
+            <div key={e.id} className="rounded border border-line bg-white/[0.02] px-3 py-2 num text-[10px]">
+              <span className={e.severity === "critical" ? "text-down" : e.severity === "warning" ? "text-warn" : "text-ink-soft"}>
                 {e.message}
               </span>
-              <span className="float-right text-neutral-600">
+              <span className="float-right text-faint">
                 {e.fired_at.slice(5, 16).replace("T", " ")}Z {e.delivered_telegram ? "· 📲" : "· local"}
               </span>
             </div>
@@ -168,7 +168,7 @@ export function AlertsView() {
         </div>
       )}
       {rules.length === 0 && events.length === 0 && (
-        <p className="rounded-lg border border-neutral-800 bg-neutral-900/60 p-4 text-xs text-neutral-400">
+        <p className="card p-5 text-xs text-muted">
           No alert rules yet. The scheduler evaluates alerts every 2 minutes; browser notifications
           fire while this tab is open.
         </p>

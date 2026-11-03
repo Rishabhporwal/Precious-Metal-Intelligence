@@ -28,9 +28,9 @@ interface Analysis {
 }
 
 const DIR_COLOR: Record<string, string> = {
-  bullish: "text-emerald-400 border-emerald-800",
-  neutral: "text-amber-400 border-amber-800",
-  bearish: "text-red-400 border-red-800",
+  bullish: "text-up border-up/30",
+  neutral: "text-warn border-warn/30",
+  bearish: "text-down border-down/30",
 };
 
 async function AnalystData() {
@@ -43,15 +43,15 @@ async function AnalystData() {
 
   if (!res) {
     return (
-      <p className="rounded-lg border border-red-900 bg-red-950/40 p-4 text-xs text-red-300">
+      <p className="card p-5 border-[rgba(246,70,93,0.3)] bg-[var(--down-dim)] text-xs text-down">
         Analyst API unreachable.
       </p>
     );
   }
   if (res.status === "none") {
     return (
-      <div className="rounded-lg border border-neutral-800 bg-neutral-900/60 p-4 text-xs text-neutral-400">
-        No analysis yet. Click <span className="text-neutral-200">Generate fresh analysis</span> —
+      <div className="card p-5 text-xs text-muted">
+        No analysis yet. Click <span className="text-ink-soft">Generate fresh analysis</span> —
         the graph gathers all deterministic evidence first, then calls the LLM once (cached).
       </div>
     );
@@ -59,25 +59,25 @@ async function AnalystData() {
 
   return (
     <div className="space-y-4">
-      <div className="rounded-lg border border-neutral-800 bg-neutral-900/60 p-4">
+      <div className="card p-5">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <span
             className={`rounded px-2 py-0.5 text-[10px] ${
               res.status === "llm"
                 ? "bg-violet-900/60 text-violet-300"
-                : "bg-neutral-800 text-neutral-400"
+                : "bg-white/[0.06] text-muted"
             }`}
           >
             {res.status === "llm" ? `LLM: ${res.model}` : "DETERMINISTIC FALLBACK"}
           </span>
-          <span className="font-mono text-[10px] text-neutral-600">
+          <span className="num text-[10px] text-faint">
             prompt {res.prompt_version} · {res.generated_at?.slice(0, 16).replace("T", " ")}Z
             {res.cache_hit ? " · cache hit" : ""}
           </span>
         </div>
-        <p className="mt-3 text-sm leading-relaxed text-neutral-200">{res.summary}</p>
+        <p className="mt-3 text-sm leading-relaxed text-ink-soft">{res.summary}</p>
         {res.data_warnings.length > 0 && (
-          <ul className="mt-2 list-disc pl-4 text-[10px] text-amber-400">
+          <ul className="mt-2 list-disc pl-4 text-[10px] text-warn">
             {res.data_warnings.map((w, i) => (
               <li key={i}>{w}</li>
             ))}
@@ -87,42 +87,42 @@ async function AnalystData() {
 
       <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
         {res.scenarios.map((s, i) => (
-          <div key={i} className={`rounded-lg border bg-neutral-900/60 p-4 ${DIR_COLOR[s.direction] ?? "border-neutral-800"}`}>
+          <div key={i} className={`rounded-lg border bg-white/[0.02] p-4 ${DIR_COLOR[s.direction] ?? "border-line"}`}>
             <div className={`text-xs font-semibold uppercase tracking-widest ${DIR_COLOR[s.direction]?.split(" ")[1] ?? ""}`}>
               {s.direction}
             </div>
-            <p className="mt-2 text-[11px] leading-relaxed text-neutral-300">{s.narrative}</p>
+            <p className="mt-2 text-[11px] leading-relaxed text-ink-soft">{s.narrative}</p>
             {s.supporting.length > 0 && (
-              <p className="mt-2 text-[10px] text-emerald-500/80">+ {s.supporting.join(", ")}</p>
+              <p className="mt-2 text-[10px] text-up/80">+ {s.supporting.join(", ")}</p>
             )}
             {s.conflicting.length > 0 && (
-              <p className="mt-1 text-[10px] text-red-500/80">− {s.conflicting.join(", ")}</p>
+              <p className="mt-1 text-[10px] text-down/80">− {s.conflicting.join(", ")}</p>
             )}
-            <div className="mt-3 space-y-1 border-t border-neutral-800 pt-2 text-[10px] text-neutral-500">
-              <p><span className="text-neutral-400">Confirm:</span> {s.confirmation}</p>
-              <p><span className="text-neutral-400">Invalidate:</span> {s.invalidation}</p>
+            <div className="mt-3 space-y-1 border-t border-line pt-2 text-[10px] text-muted">
+              <p><span className="text-muted">Confirm:</span> {s.confirmation}</p>
+              <p><span className="text-muted">Invalidate:</span> {s.invalidation}</p>
             </div>
           </div>
         ))}
       </div>
 
       {"risk" in res && res.risk != null && (
-        <div className="rounded-lg border border-neutral-800 bg-neutral-900/60 p-4">
-          <h3 className="text-[10px] font-semibold uppercase tracking-widest text-neutral-500">
+        <div className="card p-5">
+          <h3 className="card-title text-muted">
             Risk constraints (deterministic Python — Phase 8 builds on these)
           </h3>
-          <dl className="mt-2 grid grid-cols-2 gap-2 font-mono text-[11px] md:grid-cols-4">
+          <dl className="mt-2 grid grid-cols-2 gap-2 num text-[11px] md:grid-cols-4">
             {Object.entries(res.risk)
               .filter(([, v]) => typeof v === "number")
               .map(([k, v]) => (
                 <div key={k}>
-                  <dt className="text-neutral-600">{k}</dt>
-                  <dd className="text-neutral-300">{String(v)}</dd>
+                  <dt className="text-faint">{k}</dt>
+                  <dd className="text-ink-soft">{String(v)}</dd>
                 </div>
               ))}
           </dl>
           {typeof res.risk.event_risk_warning === "string" && (
-            <p className="mt-2 text-[10px] text-amber-400">{res.risk.event_risk_warning}</p>
+            <p className="mt-2 text-[10px] text-warn">{res.risk.event_risk_warning}</p>
           )}
         </div>
       )}
@@ -131,17 +131,17 @@ async function AnalystData() {
 }
 
 function AnalystSkeleton() {
-  return <div className="h-64 animate-pulse rounded-lg border border-neutral-800 bg-neutral-900/40" />;
+  return <div className="h-64 animate-pulse card animate-pulse opacity-60" />;
 }
 
 export default function AnalystPage() {
   return (
-    <main className="px-6 py-8 font-mono text-neutral-200">
+    <main className="page rise">
       <div className="mx-auto max-w-5xl">
         <header className="mb-6 flex items-baseline justify-between">
           <div>
-            <h1 className="text-xl font-semibold tracking-tight text-neutral-100">AI Market Analyst</h1>
-            <p className="mt-1 text-xs text-neutral-500">
+            <h1 className="page-title">AI Market Analyst</h1>
+            <p className="mt-1 text-xs text-muted">
               Phase 7 — LangGraph evidence synthesis · LLM narrates, Python computes every number
             </p>
           </div>
@@ -152,8 +152,8 @@ export default function AnalystPage() {
         <Suspense fallback={<AnalystSkeleton />}>
           <AnalystData />
         </Suspense>
-        <footer className="mt-8 border-t border-neutral-800 pt-4 text-[10px] leading-relaxed text-neutral-600">
-          <a className="text-neutral-400 underline" href="/">← dashboard</a> ·
+        <footer className="mt-8 border-t border-line pt-4 text-[10px] leading-relaxed text-faint">
+          <a className="text-muted underline" href="/">← dashboard</a> ·
           Every numeric level in the narrative is validated against the evidence pack; violations
           trigger one retry, then a deterministic fallback. Not financial advice.
         </footer>

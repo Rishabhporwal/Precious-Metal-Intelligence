@@ -1,5 +1,4 @@
 import { Suspense } from "react";
-import Link from "next/link";
 import { GoldChart } from "@/components/GoldChart";
 import { LiveTicker } from "@/components/LiveTicker";
 import { AnalyticsData, AnalyticsSkeleton } from "@/components/AnalyticsPanel";
@@ -49,7 +48,7 @@ async function FreshnessPanel() {
       value: quote?.received_at ? new Date(quote.received_at).toISOString().slice(0, 16) + "Z" : "—",
     },
     {
-      label: "Quote market timestamp",
+      label: "Quote market ts",
       value: quote?.market_ts ? new Date(quote.market_ts).toISOString().slice(0, 16) + "Z" : "—",
     },
     { label: "Stored daily candles", value: String(gold?.freshness.daily_count ?? 0) },
@@ -57,28 +56,23 @@ async function FreshnessPanel() {
   ];
 
   return (
-    <div className="rounded-lg border border-neutral-800 bg-neutral-900/60 p-4">
+    <div className="card p-5">
       <div className="flex items-center justify-between">
-        <h2 className="text-xs font-semibold uppercase tracking-widest text-neutral-500">
-          Data freshness
-        </h2>
-        <span
-          className={`rounded-full border px-2 py-0.5 text-[10px] ${
-            stale ? "border-amber-800 text-amber-400" : "border-emerald-800 text-emerald-400"
-          }`}
-        >
+        <h2 className="card-title">Data freshness</h2>
+        <span className={`pill ${stale ? "pill-warn" : "pill-up"}`}>
+          <span className={`dot ${stale ? "bg-warn" : "dot-live"}`} />
           {stale ? "STALE — CHECK INGESTION" : "FRESH"}
         </span>
       </div>
-      <dl className="mt-3 space-y-1.5 font-mono text-xs">
+      <dl className="mt-4 space-y-2">
         {rows.map((r) => (
-          <div key={r.label} className="flex justify-between gap-4">
-            <dt className="text-neutral-500">{r.label}</dt>
-            <dd className="text-neutral-300">{r.value}</dd>
+          <div key={r.label} className="flex justify-between gap-4 text-[12.5px]">
+            <dt className="text-muted">{r.label}</dt>
+            <dd className="num text-ink-soft">{r.value}</dd>
           </div>
         ))}
       </dl>
-      <p className="mt-3 text-[10px] leading-relaxed text-neutral-600">
+      <p className="mt-4 text-[10.5px] leading-relaxed text-faint">
         Quotes refresh every 5 min; 1-min candles every 15 min (Twelve Data free-plan credit
         budget). If freshness goes stale, check the ingestion container logs.
       </p>
@@ -87,33 +81,25 @@ async function FreshnessPanel() {
 }
 
 function FreshnessSkeleton() {
-  return (
-    <div className="h-44 animate-pulse rounded-lg border border-neutral-800 bg-neutral-900/40" />
-  );
+  return <div className="card h-44 animate-pulse" />;
 }
 
 export default function DashboardPage() {
   return (
-    <main className="px-6 py-8 font-mono text-neutral-200">
-      <div className="mx-auto max-w-4xl">
-        <header className="mb-6 flex items-baseline justify-between">
-          <div>
-            <h1 className="text-xl font-semibold tracking-tight text-neutral-100">Dashboard</h1>
-            <p className="mt-1 text-xs text-neutral-500">
-              Gold focus · Phase 2 — charts from stored candles, live price over WebSocket
-            </p>
-          </div>
-          <div className="flex gap-3 text-[11px] text-neutral-400">
-            <Link href="/markets" className="underline hover:text-neutral-100">
-              Markets
-            </Link>
-            <Link href="/status" className="underline hover:text-neutral-100">
-              Service status
-            </Link>
-          </div>
-        </header>
+    <main className="page rise">
+      <header className="mb-6 flex items-end justify-between">
+        <div>
+          <h1 className="page-title">Dashboard</h1>
+          <p className="page-sub">Gold market intelligence — live price, structure, scenarios</p>
+        </div>
+        <div className="hidden gap-2 sm:flex">
+          <span className="pill pill-gold">Gold focus</span>
+          <span className="pill">Paper only · no live orders</span>
+        </div>
+      </header>
 
-        <div className="space-y-4">
+      <div className="grid gap-4 lg:grid-cols-[1fr_300px]">
+        <div className="min-w-0 space-y-4">
           <LiveTicker />
           <GoldChart initialInterval="1day" />
           <Suspense fallback={<AnalyticsSkeleton />}>
@@ -122,16 +108,18 @@ export default function DashboardPage() {
           <Suspense fallback={<QuantSkeleton />}>
             <QuantData />
           </Suspense>
+        </div>
+        <div className="space-y-4">
           <Suspense fallback={<FreshnessSkeleton />}>
             <FreshnessPanel />
           </Suspense>
         </div>
-
-        <footer className="mt-8 border-t border-neutral-800 pt-4 text-[10px] text-neutral-600">
-          All data is real market data ingested from Twelve Data — no mock data exists in this
-          system. Nothing on this page is a trading recommendation.
-        </footer>
       </div>
+
+      <footer className="mt-8 border-t border-line-subtle pt-4 text-[10.5px] leading-relaxed text-faint">
+        All data is real market data ingested from Twelve Data — no mock data exists in this
+        system. Nothing on this page is a trading recommendation.
+      </footer>
     </main>
   );
 }

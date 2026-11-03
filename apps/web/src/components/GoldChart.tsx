@@ -74,24 +74,30 @@ export function GoldChart({ initialInterval = "1day" }: { initialInterval?: Time
     const chart = createChart(el, {
       layout: {
         background: { color: "transparent" },
-        textColor: "#a3a3a3",
+        textColor: "#8a8f98",
         fontFamily: "var(--font-geist-mono), monospace",
+        fontSize: 11,
+        attributionLogo: false,
       },
       grid: {
-        vertLines: { color: "rgba(255,255,255,0.04)" },
-        horzLines: { color: "rgba(255,255,255,0.04)" },
+        vertLines: { color: "rgba(255,255,255,0.03)" },
+        horzLines: { color: "rgba(255,255,255,0.03)" },
       },
       width: el.clientWidth,
-      height: 380,
-      timeScale: { borderColor: "#262626", timeVisible: true },
-      rightPriceScale: { borderColor: "#262626" },
+      height: 400,
+      timeScale: { borderColor: "rgba(255,255,255,0.08)", timeVisible: true },
+      rightPriceScale: { borderColor: "rgba(255,255,255,0.08)" },
+      crosshair: {
+        vertLine: { color: "rgba(230,180,34,0.35)", labelBackgroundColor: "#191a1b" },
+        horzLine: { color: "rgba(230,180,34,0.35)", labelBackgroundColor: "#191a1b" },
+      },
     });
     const candles = chart.addSeries(CandlestickSeries, {
-      upColor: "#34d399",
-      downColor: "#f87171",
+      upColor: "#10b981",
+      downColor: "#f6465d",
       borderVisible: false,
-      wickUpColor: "#34d399",
-      wickDownColor: "#f87171",
+      wickUpColor: "#10b981",
+      wickDownColor: "#f6465d",
     });
     chartRef.current = chart;
     candleRef.current = candles;
@@ -101,6 +107,7 @@ export function GoldChart({ initialInterval = "1day" }: { initialInterval?: Time
         lineWidth: 1,
         priceLineVisible: false,
         lastValueVisible: false,
+        crosshairMarkerVisible: false,
       });
     }
 
@@ -173,11 +180,11 @@ export function GoldChart({ initialInterval = "1day" }: { initialInterval?: Time
   }, [showEma]);
 
   return (
-    <div className="rounded-lg border border-neutral-800 bg-neutral-900/60 p-4">
+    <div className="card p-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex items-baseline gap-3">
-          <span className="text-sm font-medium text-neutral-100">XAU/USD</span>
-          <span className="text-[11px] text-neutral-500">
+          <span className="text-[13.5px] font-semibold tracking-tight text-ink">XAU/USD</span>
+          <span className="num text-[11px] text-faint">
             {count} candles{lastTs ? ` · last ${new Date(lastTs).toISOString().slice(0, 16)}Z` : ""}
           </span>
         </div>
@@ -186,25 +193,21 @@ export function GoldChart({ initialInterval = "1day" }: { initialInterval?: Time
             <button
               key={def.key}
               onClick={() => setShowEma((s) => ({ ...s, [def.key]: !s[def.key] }))}
-              className={`rounded border px-2 py-1 font-mono text-[10px] transition-colors ${
-                showEma[def.key]
-                  ? "border-transparent text-neutral-900"
-                  : "border-neutral-700 text-neutral-500"
-              }`}
+              className={`rounded-md border px-2 py-1 text-[10.5px] font-medium transition-all ${showEma[def.key] ? "border-transparent text-[#0c0a03]" : "border-line text-muted hover:text-ink"}`}
               style={showEma[def.key] ? { background: def.color } : {}}
             >
               {def.label}
             </button>
           ))}
-          <span className="mx-1 text-neutral-700">|</span>
+          <span className="mx-1 h-4 w-px bg-line" aria-hidden />
           {TIMEFRAMES.map((tf) => (
             <button
               key={tf.interval}
               onClick={() => setInterval_(tf.interval)}
-              className={`rounded px-2 py-1 font-mono text-[11px] transition-colors ${
+              className={`rounded-md px-2 py-1 text-[11.5px] font-medium transition-all ${
                 interval === tf.interval
-                  ? "bg-neutral-100 text-neutral-900"
-                  : "text-neutral-400 hover:bg-neutral-800 hover:text-neutral-200"
+                  ? "bg-gold-dim text-gold-bright"
+                  : "text-muted hover:bg-white/5 hover:text-ink"
               }`}
             >
               {tf.label}
@@ -213,11 +216,11 @@ export function GoldChart({ initialInterval = "1day" }: { initialInterval?: Time
         </div>
       </div>
       {error ? (
-        <p className="mt-4 text-xs text-red-400">Failed to load chart data: {error}</p>
+        <p className="mt-4 text-xs text-down">Failed to load chart data: {error}</p>
       ) : (
         <div ref={containerRef} className="mt-3" />
       )}
-      <p className="mt-2 text-[10px] text-neutral-600">
+      <p className="mt-2.5 text-[10.5px] leading-relaxed text-faint">
         Charts render candles + indicators stored/computed in Postgres + quant engine (Twelve Data
         source). Newest candle may be provisional until it closes.
         {latest

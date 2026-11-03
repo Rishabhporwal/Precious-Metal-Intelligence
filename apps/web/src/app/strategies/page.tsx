@@ -50,7 +50,7 @@ async function StrategiesData() {
 
   if (!reg || !dets) {
     return (
-      <p className="rounded-lg border border-red-900 bg-red-950/40 p-4 text-sm text-red-300">
+      <p className="card p-5 border-[rgba(246,70,93,0.3)] bg-[var(--down-dim)] text-sm text-down">
         Strategies API unreachable — check the api and quant services.
       </p>
     );
@@ -67,8 +67,8 @@ async function StrategiesData() {
   return (
     <>
       {/* Detection chart annotations: active levels on the recent 1h range */}
-      <section className="rounded-lg border border-neutral-800 bg-neutral-900/60 p-4">
-        <h2 className="text-[10px] font-semibold uppercase tracking-widest text-neutral-500">
+      <section className="card p-5">
+        <h2 className="card-title text-muted">
           Active levels — last 60×1H candles (annotation preview)
         </h2>
         <div className="relative mt-3 h-56">
@@ -91,7 +91,7 @@ async function StrategiesData() {
             return (
               <div
                 key={`${d.strategy_id}-${d.anchor_time}-${i}`}
-                className="absolute left-0 flex w-full items-center justify-between border-t border-dashed px-2 text-[9px]"
+                className="absolute left-0 flex w-full items-center justify-between border-t border-dashed px-2 text-[10px]"
                 style={{ top: `${pctY(level)}%`, borderColor: color, color }}
               >
                 <span>
@@ -102,7 +102,7 @@ async function StrategiesData() {
             );
           })}
         </div>
-        <p className="mt-2 text-[10px] text-neutral-600">
+        <p className="mt-2 text-[10px] text-faint">
           Active detections only (levels outside the visible range are omitted). Full TradingView
           zone boxes arrive with Phase 4 chart polish.
         </p>
@@ -110,24 +110,24 @@ async function StrategiesData() {
 
       {/* Registry */}
       <section className="mt-6">
-        <h2 className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-neutral-500">
+        <h2 className="mb-2 card-title text-muted">
           Strategy registry ({reg.strategies.filter((s) => s.enabled).length}/{reg.strategies.length} enabled)
         </h2>
         <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
           {reg.strategies.map((s) => (
-            <div key={s.strategy_id} className="rounded border border-neutral-800 bg-neutral-900/40 p-3">
+            <div key={s.strategy_id} className="rounded border border-line bg-white/[0.02] p-3">
               <div className="flex items-center justify-between">
-                <span className="font-mono text-xs text-neutral-200">{s.name}</span>
+                <span className="num text-xs text-ink-soft">{s.name}</span>
                 <span
-                  className={`rounded px-1.5 py-0.5 text-[9px] ${
-                    s.enabled ? "bg-emerald-900/60 text-emerald-400" : "bg-neutral-800 text-neutral-500"
+                  className={`rounded px-1.5 py-0.5 text-[10px] ${
+                    s.enabled ? "bg-up/10 text-up" : "bg-white/[0.06] text-muted"
                   }`}
                 >
                   {s.enabled ? "ENABLED" : "OFF"}
                 </span>
               </div>
-              <p className="mt-1 text-[10px] leading-relaxed text-neutral-500">{s.description}</p>
-              <p className="mt-1 font-mono text-[9px] text-neutral-600">
+              <p className="mt-1 text-[10px] leading-relaxed text-muted">{s.description}</p>
+              <p className="mt-1 num text-[10px] text-faint">
                 {s.strategy_id} · {s.algo_version}
               </p>
             </div>
@@ -137,12 +137,12 @@ async function StrategiesData() {
 
       {/* Detections table */}
       <section className="mt-6">
-        <h2 className="mb-2 text-[10px] font-semibold uppercase tracking-widest text-neutral-500">
+        <h2 className="mb-2 card-title text-muted">
           Recent detections (latest {dets.count})
         </h2>
-        <div className="overflow-x-auto rounded-lg border border-neutral-800">
+        <div className="overflow-x-auto card">
           <table className="w-full text-left text-xs">
-            <thead className="bg-neutral-900 text-neutral-500">
+            <thead className="bg-white/[0.02] text-muted">
               <tr>
                 {["Strategy", "Dir", "TF", "Status", "Anchor", "Levels", "Evidence"].map((h) => (
                   <th key={h} className="px-3 py-2 font-medium">
@@ -153,44 +153,44 @@ async function StrategiesData() {
             </thead>
             <tbody>
               {dets.detections.map((d, i) => (
-                <tr key={i} className="border-t border-neutral-800 align-top">
-                  <td className="px-3 py-2 font-mono text-[10px] text-neutral-300">{d.strategy_id}</td>
+                <tr key={i} className="border-t border-line align-top">
+                  <td className="px-3 py-2 num text-[10px] text-ink-soft">{d.strategy_id}</td>
                   <td
                     className={`px-3 py-2 text-[10px] ${
                       d.direction === "bullish"
-                        ? "text-emerald-400"
+                        ? "text-up"
                         : d.direction === "bearish"
-                          ? "text-red-400"
-                          : "text-neutral-400"
+                          ? "text-down"
+                          : "text-muted"
                     }`}
                   >
                     {d.direction}
                   </td>
-                  <td className="px-3 py-2 text-[10px] text-neutral-400">{d.interval}</td>
+                  <td className="px-3 py-2 text-[10px] text-muted">{d.interval}</td>
                   <td className="px-3 py-2 text-[10px]">
                     <span
                       className={
                         d.status === "active"
-                          ? "text-emerald-400"
+                          ? "text-up"
                           : d.status === "consumed"
-                            ? "text-neutral-500"
-                            : "text-amber-400"
+                            ? "text-muted"
+                            : "text-warn"
                       }
                     >
                       {d.status}
                     </span>
                   </td>
-                  <td className="px-3 py-2 font-mono text-[10px] text-neutral-500">
+                  <td className="px-3 py-2 num text-[10px] text-muted">
                     {d.anchor_time.slice(5, 16).replace("T", " ")}
                   </td>
-                  <td className="px-3 py-2 font-mono text-[10px] text-neutral-400">
+                  <td className="px-3 py-2 num text-[10px] text-muted">
                     {Object.entries(d.levels)
                       .filter(([k]) => !["atr", "body"].includes(k))
                       .slice(0, 3)
                       .map(([k, v]) => `${k} ${v != null ? Number(v).toFixed(2) : "—"}`)
                       .join(", ") || "—"}
                   </td>
-                  <td className="max-w-[320px] px-3 py-2 text-[10px] leading-snug text-neutral-500">
+                  <td className="max-w-[320px] px-3 py-2 text-[10px] leading-snug text-muted">
                     {d.evidence[0]}
                     {d.evidence.length > 1 ? ` (+${d.evidence.length - 1})` : ""}
                   </td>
@@ -200,7 +200,7 @@ async function StrategiesData() {
           </table>
         </div>
         {lastClose != null && (
-          <p className="mt-2 text-[10px] text-neutral-600">
+          <p className="mt-2 text-[10px] text-faint">
             Current gold close: {lastClose.toFixed(2)} · detections are analysis records, NOT trade
             recommendations (risk validation lands in Phase 8).
           </p>
@@ -211,24 +211,24 @@ async function StrategiesData() {
 }
 
 function StrategiesSkeleton() {
-  return <div className="h-96 animate-pulse rounded-lg border border-neutral-800 bg-neutral-900/40" />;
+  return <div className="h-96 animate-pulse card animate-pulse opacity-60" />;
 }
 
 export default function StrategiesPage() {
   return (
-    <main className="px-6 py-8 font-mono text-neutral-200">
+    <main className="page rise">
       <div className="mx-auto max-w-5xl">
         <header className="mb-6">
-          <h1 className="text-xl font-semibold tracking-tight text-neutral-100">Advanced Strategies</h1>
-          <p className="mt-1 text-xs text-neutral-500">
+          <h1 className="page-title">Advanced Strategies</h1>
+          <p className="mt-1 text-xs text-muted">
             Phase 4 — SMC/ICT P0 detections on XAU/USD · deterministic, repaint-free, algo-versioned
           </p>
         </header>
         <Suspense fallback={<StrategiesSkeleton />}>
           <StrategiesData />
         </Suspense>
-        <footer className="mt-8 border-t border-neutral-800 pt-4 text-[10px] text-neutral-600">
-          <a className="text-neutral-400 underline" href="/">← dashboard</a> ·
+        <footer className="mt-8 border-t border-line-subtle pt-4 text-[10.5px] text-faint">
+          <a className="text-muted underline" href="/">← dashboard</a> ·
           detections persist append-only in Postgres with algo version + params for reproducibility
         </footer>
       </div>

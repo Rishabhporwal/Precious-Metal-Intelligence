@@ -37,12 +37,12 @@ export function GenerateAnalysisButton() {
       <button
         onClick={run}
         disabled={busy}
-        className="rounded border border-neutral-600 px-3 py-1.5 font-mono text-xs text-neutral-200 hover:bg-neutral-800 disabled:opacity-50"
+        className="rounded border border-line px-3 py-1.5 num text-xs text-ink-soft hover:bg-white/[0.06] disabled:opacity-50"
       >
         {busy ? "generating…" : "Generate fresh analysis"}
       </button>
-      {msg && <span className="text-[10px] text-neutral-500">{msg}</span>}
-      <p className="text-[10px] text-neutral-600">
+      {msg && <span className="text-[10px] text-muted">{msg}</span>}
+      <p className="text-[10px] text-faint">
         Identical evidence = zero LLM spend (Redis cache + DB dedupe).
       </p>
     </div>

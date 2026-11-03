@@ -2,27 +2,27 @@ import { Suspense } from "react";
 import { getServiceRows, type ServiceRow } from "@/lib/serviceStatus";
 
 const STATE_STYLES: Record<ServiceRow["status"], { dot: string; text: string; label: string }> = {
-  ok: { dot: "bg-emerald-400", text: "text-emerald-400", label: "OK" },
-  degraded: { dot: "bg-amber-400", text: "text-amber-400", label: "DEGRADED" },
-  down: { dot: "bg-red-500", text: "text-red-400", label: "DOWN" },
+  ok: { dot: "bg-up", text: "text-up", label: "OK" },
+  degraded: { dot: "bg-warn", text: "text-warn", label: "DEGRADED" },
+  down: { dot: "bg-down", text: "text-down", label: "DOWN" },
 };
 
 function ServiceCard({ row }: { row: ServiceRow }) {
   const s = STATE_STYLES[row.status];
   return (
-    <div className="rounded-lg border border-neutral-800 bg-neutral-900/60 p-4">
+    <div className="card p-5">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className={`inline-block h-2 w-2 rounded-full ${s.dot}`} />
-          <span className="text-sm font-medium text-neutral-100">{row.label}</span>
+          <span className="text-sm font-medium text-ink">{row.label}</span>
         </div>
         <span className={`text-[11px] font-semibold tracking-widest ${s.text}`}>{s.label}</span>
       </div>
-      <div className="mt-2 flex items-center justify-between text-xs text-neutral-400">
+      <div className="mt-2 flex items-center justify-between text-xs text-muted">
         <span>:{row.port}</span>
         <span>{row.version ?? "—"}</span>
       </div>
-      <p className="mt-2 text-xs text-neutral-500">{row.detail}</p>
+      <p className="mt-2 text-xs text-muted">{row.detail}</p>
       {row.deps.length > 0 && (
         <div className="mt-3 flex flex-wrap gap-2">
           {row.deps.map((d) => (
@@ -30,10 +30,10 @@ function ServiceCard({ row }: { row: ServiceRow }) {
               key={d.name}
               className={`rounded-full border px-2 py-0.5 text-[10px] ${
                 d.state === "up"
-                  ? "border-emerald-800 text-emerald-400"
+                  ? "pill pill-up"
                   : d.state === "unconfigured"
-                    ? "border-neutral-700 text-neutral-400"
-                    : "border-red-900 text-red-400"
+                    ? "border-line text-muted"
+                    : "border-down/30 text-down"
               }`}
             >
               {d.name}
@@ -53,12 +53,12 @@ async function StatusSection() {
     <>
       <div
         className={`mb-5 inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs ${
-          allOk ? "border-emerald-800 text-emerald-400" : "border-amber-800 text-amber-400"
+          allOk ? "pill pill-up" : "pill pill-warn"
         }`}
       >
         <span
           className={`inline-block h-1.5 w-1.5 rounded-full ${
-            allOk ? "bg-emerald-400" : "bg-amber-400"
+            allOk ? "bg-up" : "bg-warn"
           }`}
         />
         {allOk ? "ALL SYSTEMS OPERATIONAL" : "STACK PARTIALLY UP"}
@@ -78,7 +78,7 @@ function StatusSkeleton() {
       {Array.from({ length: 5 }).map((_, i) => (
         <div
           key={i}
-          className="h-28 animate-pulse rounded-lg border border-neutral-800 bg-neutral-900/40"
+          className="h-28 animate-pulse card animate-pulse opacity-60"
         />
       ))}
     </div>
@@ -87,13 +87,13 @@ function StatusSkeleton() {
 
 export default function Home() {
   return (
-    <main className="min-h-screen bg-neutral-950 px-6 py-10 font-mono text-neutral-200">
+    <main className="page rise">
       <div className="mx-auto max-w-3xl">
         <header className="mb-8">
-          <h1 className="text-xl font-semibold tracking-tight text-neutral-100">
+          <h1 className="page-title">
             Precious Metals Intelligence
           </h1>
-          <p className="mt-1 text-xs text-neutral-500">
+          <p className="mt-1 text-xs text-muted">
             Service status · live probes, refreshed per request
           </p>
         </header>
@@ -102,9 +102,9 @@ export default function Home() {
           <StatusSection />
         </Suspense>
 
-        <footer className="mt-8 border-t border-neutral-800 pt-4 text-[11px] leading-relaxed text-neutral-600">
+        <footer className="mt-8 border-t border-line pt-4 text-[11px] leading-relaxed text-faint">
           <p>
-            <a className="text-neutral-400 underline" href="/markets">
+            <a className="text-muted underline" href="/markets">
               Markets →
             </a>{" "}
             live ingested market data
@@ -114,15 +114,15 @@ export default function Home() {
           </p>
           <p className="mt-1">
             Health JSON:{" "}
-            <a className="text-neutral-400 underline" href="/api/health">
+            <a className="text-muted underline" href="/api/health">
               /api/health
             </a>{" "}
             ·{" "}
-            <a className="text-neutral-400 underline" href="http://localhost:8000/readyz">
+            <a className="text-muted underline" href="http://localhost:8000/readyz">
               api :8000/readyz
             </a>{" "}
             ·{" "}
-            <a className="text-neutral-400 underline" href="http://localhost:8001/ready">
+            <a className="text-muted underline" href="http://localhost:8001/ready">
               quant :8001/ready
             </a>
           </p>

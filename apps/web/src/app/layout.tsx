@@ -1,6 +1,6 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import Link from "next/link";
+import { Shell } from "@/components/Shell";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -14,22 +14,14 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Precious Metals Intelligence",
-  description: "AI-powered Gold & Silver market intelligence platform",
+  title: "PMI — Precious Metals Intelligence",
+  description:
+    "AI-powered Gold market intelligence: SMC/ICT strategy detection, macro analysis, risk-validated setups, paper trading and reproducible backtesting.",
 };
 
-const NAV = [
-  { href: "/", label: "Dashboard" },
-  { href: "/analyst", label: "AI Analyst" },
-  { href: "/strategies", label: "Strategies" },
-  { href: "/setups", label: "Setups" },
-  { href: "/paper", label: "Paper" },
-  { href: "/backtests", label: "Backtests" },
-  { href: "/alerts", label: "Alerts" },
-  { href: "/macro", label: "Macro" },
-  { href: "/markets", label: "Markets" },
-  { href: "/status", label: "Status" },
-];
+export const viewport: Viewport = {
+  themeColor: "#08090a",
+};
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
@@ -37,22 +29,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-neutral-950 text-neutral-200">
-        <header className="border-b border-neutral-800 bg-neutral-950/95 px-6 py-3">
-          <div className="mx-auto flex max-w-4xl items-center justify-between">
-            <Link href="/" className="font-mono text-sm font-semibold text-neutral-100">
-              PMI · Precious Metals Intelligence
-            </Link>
-            <nav className="flex flex-wrap justify-end gap-x-4 gap-y-1 font-mono text-xs text-neutral-400">
-              {NAV.map((item) => (
-                <Link key={item.href} href={item.href} className="hover:text-neutral-100">
-                  {item.label}
-                </Link>
-              ))}
-            </nav>
-          </div>
-        </header>
-        <div className="flex-1">{children}</div>
+      <body className="min-h-full bg-canvas text-ink">
+        <Shell>{children}</Shell>
       </body>
     </html>
   );
