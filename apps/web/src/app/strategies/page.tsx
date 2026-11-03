@@ -221,7 +221,7 @@ export default function StrategiesPage() {
         <header className="mb-6">
           <h1 className="page-title">Advanced Strategies</h1>
           <p className="mt-1 text-xs text-muted">
-            Phase 4 — SMC/ICT P0 detections on XAU/USD · deterministic, repaint-free, algo-versioned
+            The patterns our engine watches for — the technical view
           </p>
         </header>
         <Suspense fallback={<StrategiesSkeleton />}>

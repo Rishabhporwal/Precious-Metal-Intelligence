@@ -92,7 +92,7 @@ export default function SetupsPage() {
         <header className="mb-6">
           <h1 className="page-title">Trade Setups</h1>
           <p className="mt-1 text-xs text-muted">
-            Phase 8 — composite candidates through the risk gate · sizing on $1,000 @ 1% risk · paper only
+            Idea cards from our engine — every one checked against the risk rules first
           </p>
         </header>
         <Suspense fallback={<div className="h-40 animate-pulse card animate-pulse opacity-60" />}>

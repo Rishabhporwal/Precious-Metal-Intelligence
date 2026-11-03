@@ -1,33 +1,72 @@
 @import "tailwindcss";
 
 /* ============================================================
-   PMI Design System — 2026 institutional dark terminal
-   Base language: Linear-style luminance-stepped dark surfaces,
-   single chromatic accent (gold = precious-metal identity),
-   trading green/red semantics, Geist + Geist Mono.
+   PMI Design System — friendly fintech, light-first
+   Light default (warm paper, soft shadows, gold accent);
+   full dark theme via [data-theme="dark"] on <html>.
    ============================================================ */
 
 :root {
-  /* surfaces — luminance steps, never solid on dark */
+  /* light — warm, friendly, premium */
+  --bg-canvas: #f7f6f2;
+  --bg-panel: #ffffff;
+  --bg-surface: #ffffff;
+  --bg-raised: #fdfcfa;
+  --bg-hover: rgba(15, 23, 42, 0.035);
+  --bg-active: rgba(15, 23, 42, 0.06);
+
+  /* text */
+  --ink: #17181c;
+  --ink-secondary: #3f444e;
+  --ink-muted: #6d7480;
+  --ink-faint: #9ba1ac;
+
+  /* accent — PMI gold (darkened for light-bg contrast) */
+  --gold: #c78f0a;
+  --gold-deep: #b8860b;
+  --gold-bright: #a97a08;
+  --gold-dim: rgba(199, 143, 10, 0.11);
+
+  /* trading semantics (light-optimized) */
+  --up: #059669;
+  --up-dim: rgba(5, 150, 105, 0.1);
+  --down: #e11d48;
+  --down-dim: rgba(225, 29, 72, 0.09);
+  --warn: #b45309;
+  --warn-dim: rgba(180, 83, 9, 0.1);
+
+  /* borders + shadows */
+  --line: rgba(20, 30, 50, 0.1);
+  --line-subtle: rgba(20, 30, 50, 0.06);
+  --line-strong: rgba(20, 30, 50, 0.18);
+  --shadow-card: 0 1px 2px rgba(16, 24, 40, 0.05), 0 1px 3px rgba(16, 24, 40, 0.04);
+  --shadow-pop: 0 4px 16px rgba(16, 24, 40, 0.1), 0 1px 3px rgba(16, 24, 40, 0.06);
+
+  /* chart */
+  --chart-grid: rgba(20, 30, 50, 0.06);
+  --chart-text: #6d7480;
+  --chart-up: #059669;
+  --chart-down: #e11d48;
+}
+
+[data-theme="dark"] {
   --bg-canvas: #08090a;
   --bg-panel: #0f1011;
   --bg-surface: #191a1b;
+  --bg-raised: #191a1b;
   --bg-hover: rgba(255, 255, 255, 0.04);
   --bg-active: rgba(255, 255, 255, 0.06);
 
-  /* text */
   --ink: #f7f8f8;
   --ink-secondary: #d0d6e0;
   --ink-muted: #8a8f98;
   --ink-faint: #62666d;
 
-  /* accent — PMI gold */
   --gold: #e6b422;
   --gold-deep: #d4a017;
   --gold-bright: #f0c04a;
   --gold-dim: rgba(230, 180, 34, 0.12);
 
-  /* trading semantics */
   --up: #10b981;
   --up-dim: rgba(16, 185, 129, 0.12);
   --down: #f6465d;
@@ -35,16 +74,23 @@
   --warn: #f59e0b;
   --warn-dim: rgba(245, 158, 11, 0.12);
 
-  /* borders — whisper-thin translucent white */
   --line: rgba(255, 255, 255, 0.08);
   --line-subtle: rgba(255, 255, 255, 0.05);
   --line-strong: rgba(255, 255, 255, 0.14);
+  --shadow-card: none;
+  --shadow-pop: 0 4px 16px rgba(0, 0, 0, 0.4);
+
+  --chart-grid: rgba(255, 255, 255, 0.03);
+  --chart-text: #8a8f98;
+  --chart-up: #10b981;
+  --chart-down: #f6465d;
 }
 
 @theme inline {
   --color-canvas: var(--bg-canvas);
   --color-panel: var(--bg-panel);
   --color-surface: var(--bg-surface);
+  --color-raised: var(--bg-raised);
   --color-ink: var(--ink);
   --color-ink-soft: var(--ink-secondary);
   --color-muted: var(--ink-muted);
@@ -71,20 +117,20 @@ body {
 }
 
 ::selection {
-  background: rgba(230, 180, 34, 0.25);
+  background: rgba(199, 143, 10, 0.22);
 }
 
 /* --- scrollbars: thin, low-noise --- */
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgba(255, 255, 255, 0.12) transparent;
+  scrollbar-color: rgba(120, 130, 145, 0.35) transparent;
 }
 *::-webkit-scrollbar {
   width: 8px;
   height: 8px;
 }
 *::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(120, 130, 145, 0.35);
   border-radius: 8px;
 }
 *::-webkit-scrollbar-track {
@@ -95,29 +141,29 @@ body {
    Component classes
    ============================================================ */
 
-/* Cards: translucent surfaces with hairline borders */
 .card {
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid var(--line);
-  border-radius: 12px;
+  background: var(--bg-panel);
+  border: 1px solid var(--line-subtle);
+  border-radius: 14px;
+  box-shadow: var(--shadow-card);
 }
 .card-elevated {
   background: var(--bg-surface);
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: 14px;
+  box-shadow: var(--shadow-pop);
 }
 .card-hover {
-  transition: background 150ms ease, border-color 150ms ease;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
 }
 .card-hover:hover {
-  background: rgba(255, 255, 255, 0.035);
   border-color: var(--line-strong);
+  box-shadow: var(--shadow-pop);
 }
 
-/* Section header inside cards */
 .card-title {
   font-size: 11px;
-  font-weight: 590;
+  font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--ink-faint);
@@ -132,28 +178,28 @@ body {
   border-radius: 9999px;
   border: 1px solid var(--line);
   font-size: 11px;
-  font-weight: 510;
+  font-weight: 550;
   color: var(--ink-secondary);
   white-space: nowrap;
 }
 .pill-gold {
   background: var(--gold-dim);
-  border-color: rgba(230, 180, 34, 0.3);
+  border-color: rgba(199, 143, 10, 0.3);
   color: var(--gold-bright);
 }
 .pill-up {
   background: var(--up-dim);
-  border-color: rgba(16, 185, 129, 0.3);
+  border-color: rgba(5, 150, 105, 0.25);
   color: var(--up);
 }
 .pill-down {
   background: var(--down-dim);
-  border-color: rgba(246, 70, 93, 0.3);
+  border-color: rgba(225, 29, 72, 0.25);
   color: var(--down);
 }
 .pill-warn {
   background: var(--warn-dim);
-  border-color: rgba(245, 158, 11, 0.3);
+  border-color: rgba(180, 83, 9, 0.25);
   color: var(--warn);
 }
 
@@ -166,7 +212,6 @@ body {
 }
 .dot-live {
   background: var(--up);
-  box-shadow: 0 0 6px rgba(16, 185, 129, 0.7);
   animation: pulse 2.4s ease-in-out infinite;
 }
 @keyframes pulse {
@@ -184,18 +229,19 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 7px 14px;
-  border-radius: 8px;
+  padding: 8px 15px;
+  border-radius: 10px;
   font-size: 13px;
-  font-weight: 510;
+  font-weight: 550;
   transition: all 150ms ease;
   cursor: pointer;
   border: 1px solid var(--line);
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--bg-panel);
   color: var(--ink-secondary);
+  box-shadow: var(--shadow-card);
 }
 .btn:hover {
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--bg-hover);
   color: var(--ink);
 }
 .btn:disabled {
@@ -205,49 +251,50 @@ body {
 .btn-gold {
   background: var(--gold-deep);
   border-color: var(--gold-deep);
-  color: #0c0a03;
-  font-weight: 590;
+  color: #fff;
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(120, 90, 0, 0.25);
 }
 .btn-gold:hover {
   background: var(--gold-bright);
   border-color: var(--gold-bright);
-  color: #0c0a03;
+  color: #fff;
 }
 .btn-sm {
   padding: 4px 10px;
   font-size: 12px;
-  border-radius: 6px;
+  border-radius: 8px;
 }
 
 /* Inputs */
 .input {
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--bg-canvas);
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 10px;
   padding: 8px 12px;
   font-size: 13px;
   color: var(--ink);
   outline: none;
-  transition: border-color 150ms ease, background 150ms ease;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
 }
 .input:focus {
-  border-color: rgba(230, 180, 34, 0.5);
-  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(199, 143, 10, 0.55);
+  box-shadow: 0 0 0 3px rgba(199, 143, 10, 0.12);
 }
 .input::placeholder {
   color: var(--ink-faint);
 }
 
-/* Data tables: hairline rows, no zebra noise */
+/* Data tables */
 .data-table {
   width: 100%;
   text-align: left;
   border-collapse: collapse;
-  font-size: 12.5px;
+  font-size: 13px;
 }
 .data-table thead th {
   font-size: 10.5px;
-  font-weight: 590;
+  font-weight: 600;
   letter-spacing: 0.07em;
   text-transform: uppercase;
   color: var(--ink-faint);
@@ -256,7 +303,7 @@ body {
   white-space: nowrap;
 }
 .data-table tbody td {
-  padding: 10px 14px;
+  padding: 11px 14px;
   border-bottom: 1px solid var(--line-subtle);
   color: var(--ink-secondary);
   white-space: nowrap;
@@ -265,17 +312,16 @@ body {
   border-bottom: none;
 }
 .data-table tbody tr:hover td {
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--bg-hover);
 }
 
-/* Numeric data — always mono with tabular figures */
+/* Numeric data */
 .num {
   font-family: var(--font-geist-mono), ui-monospace, monospace;
   font-variant-numeric: tabular-nums;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.01em;
 }
 
-/* Metric display */
 .metric-xl {
   font-family: var(--font-geist-mono), ui-monospace, monospace;
   font-variant-numeric: tabular-nums;
@@ -286,40 +332,37 @@ body {
 
 /* Page scaffold */
 .page {
-  padding: 28px 32px 48px;
+  padding: 28px 32px 56px;
   max-width: 1200px;
 }
 @media (max-width: 1023px) {
   .page {
-    padding: 20px 16px 40px;
+    padding: 20px 16px 44px;
   }
 }
 .page-title {
   font-size: 26px;
-  font-weight: 590;
+  font-weight: 600;
   letter-spacing: -0.7px;
   color: var(--ink);
   line-height: 1.1;
 }
 .page-sub {
-  font-size: 13px;
+  font-size: 13.5px;
   color: var(--ink-muted);
   margin-top: 4px;
 }
-.section-gap {
-  margin-top: 20px;
-}
 
-/* Nav item */
+/* Nav */
 .nav-item {
   display: flex;
   align-items: center;
   gap: 9px;
-  padding: 6px 10px;
+  padding: 7px 10px;
   margin: 1px 8px;
-  border-radius: 8px;
+  border-radius: 9px;
   font-size: 13px;
-  font-weight: 510;
+  font-weight: 530;
   color: var(--ink-muted);
   transition: background 120ms ease, color 120ms ease;
 }
@@ -328,31 +371,31 @@ body {
   color: var(--ink);
 }
 .nav-item-active {
-  background: rgba(230, 180, 34, 0.1);
+  background: var(--gold-dim);
   color: var(--gold-bright);
+  font-weight: 600;
 }
 .nav-item-active:hover {
-  background: rgba(230, 180, 34, 0.14);
+  background: var(--gold-dim);
   color: var(--gold-bright);
 }
 .nav-group {
   font-size: 10px;
-  font-weight: 590;
+  font-weight: 600;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--ink-faint);
-  padding: 16px 18px 6px;
+  padding: 18px 18px 6px;
 }
 
 /* Focus rings */
 a:focus-visible,
 button:focus-visible,
 input:focus-visible {
-  outline: 2px solid rgba(230, 180, 34, 0.5);
+  outline: 2px solid rgba(199, 143, 10, 0.55);
   outline-offset: 2px;
 }
 
-/* Subtle entrance */
 @keyframes rise {
   from {
     opacity: 0;
@@ -365,4 +408,17 @@ input:focus-visible {
 }
 .rise {
   animation: rise 300ms ease both;
+}
+
+/* Friendly plain-language surfaces */
+.brief-card {
+  background: linear-gradient(135deg, var(--bg-panel) 0%, var(--bg-raised) 100%);
+  border: 1px solid var(--line-subtle);
+  border-radius: 16px;
+  box-shadow: var(--shadow-card);
+}
+.plain-lead {
+  font-size: 15.5px;
+  line-height: 1.65;
+  color: var(--ink-secondary);
 }

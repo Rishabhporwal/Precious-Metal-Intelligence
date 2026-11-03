@@ -1,4 +1,7 @@
 import { Suspense } from "react";
+import { GoldChart } from "@/components/GoldChart";
+import { AnalyticsData, AnalyticsSkeleton } from "@/components/AnalyticsPanel";
+import { QuantData, QuantSkeleton } from "@/components/QuantPanel";
 
 interface InstrumentRow {
   symbol: string;
@@ -172,20 +175,27 @@ function MarketsSkeleton() {
 export default function MarketsPage() {
   return (
     <main className="page rise">
-      <div className="mx-auto max-w-3xl">
+      <div className="mx-auto max-w-5xl">
         <header className="mb-8">
-          <h1 className="page-title">Markets</h1>
-          <p className="mt-1 text-xs text-muted">
-            Phase 1 — live Twelve Data ingestion · real market data only, nothing mocked
-          </p>
+          <h1 className="page-title">Prices & charts</h1>
+          <p className="page-sub">Gold charts, indicators and market internals — the pro view</p>
         </header>
         <Suspense fallback={<MarketsSkeleton />}>
           <MarketsData />
         </Suspense>
-        <footer className="mt-8 border-t border-line pt-4 text-[11px] text-faint">
-          <a className="text-muted underline" href="/status">
-            ← service status
-          </a>
+        <div className="section-gap" />
+        <GoldChart initialInterval="1day" />
+        <div className="section-gap" />
+        <Suspense fallback={<AnalyticsSkeleton />}>
+          <AnalyticsData />
+        </Suspense>
+        <div className="section-gap" />
+        <Suspense fallback={<QuantSkeleton />}>
+          <QuantData />
+        </Suspense>
+        <footer className="mt-8 border-t border-line-subtle pt-4 text-[10.5px] leading-relaxed text-faint">
+          Real market data ingested from Twelve Data — nothing mocked. Indicators are computed
+          from stored candles with no look-ahead.
         </footer>
       </div>
     </main>

@@ -5,9 +5,9 @@ export default function PaperPage() {
     <main className="page rise">
       <div className="mx-auto max-w-5xl">
         <header className="mb-6">
-          <h1 className="page-title">Paper Trading</h1>
+          <h1 className="page-title">My Practice</h1>
           <p className="mt-1 text-xs text-muted">
-            SIMULATED only — fills at stored quotes, stops filled pessimistically. No live orders ever.
+            Practice with pretend money at real market prices. Nothing here touches a real broker.
           </p>
         </header>
         <PaperTradingView />

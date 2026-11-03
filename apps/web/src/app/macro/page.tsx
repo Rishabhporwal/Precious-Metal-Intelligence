@@ -213,7 +213,7 @@ export default function MacroPage() {
         <header className="mb-6">
           <h1 className="page-title">Macro Intelligence</h1>
           <p className="mt-1 text-xs text-muted">
-            Phase 5 — FRED macro data, CFTC positioning, release calendar, news (all real, sourced & dated)
+            The economic numbers that move gold — official data, always sourced
           </p>
         </header>
         <Suspense fallback={<MacroSkeleton />}>

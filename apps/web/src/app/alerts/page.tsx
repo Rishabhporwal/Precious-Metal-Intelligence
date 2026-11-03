@@ -7,7 +7,7 @@ export default function AlertsPage() {
         <header className="mb-6">
           <h1 className="page-title">Alerts</h1>
           <p className="mt-1 text-xs text-muted">
-            Phase 8 — price/structure/setup alerts · cooldown + dedupe built in · Telegram when configured
+            We watch gold for you and ping you when something happens.
           </p>
         </header>
         <AlertsView />

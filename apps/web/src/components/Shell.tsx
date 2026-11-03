@@ -4,35 +4,33 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { LivePriceChip } from "./LivePriceChip";
+import { ThemeToggle } from "./ThemeToggle";
 
+/** Consumer-first nav. Technical tools live under "Advanced" for power users. */
 const NAV: { group: string; items: { href: string; label: string; icon: ReactNode }[] }[] = [
   {
-    group: "Overview",
+    group: "For you",
     items: [
-      { href: "/", label: "Dashboard", icon: <IconGrid /> },
-      { href: "/markets", label: "Markets", icon: <IconCandle /> },
-    ],
-  },
-  {
-    group: "Intelligence",
-    items: [
-      { href: "/analyst", label: "AI Analyst", icon: <IconSpark /> },
-      { href: "/strategies", label: "Strategies", icon: <IconTarget /> },
-      { href: "/setups", label: "Trade Setups", icon: <IconZap /> },
-    ],
-  },
-  {
-    group: "Risk",
-    items: [
-      { href: "/paper", label: "Paper Trading", icon: <IconBook /> },
-      { href: "/backtests", label: "Backtests", icon: <IconClock /> },
+      { href: "/", label: "Home", icon: <IconHome /> },
+      { href: "/paper", label: "My Practice", icon: <IconBook /> },
       { href: "/alerts", label: "Alerts", icon: <IconBell /> },
     ],
   },
   {
-    group: "Data",
+    group: "Market data",
     items: [
-      { href: "/macro", label: "Macro", icon: <IconGlobe /> },
+      { href: "/markets", label: "Prices", icon: <IconCandle /> },
+      { href: "/macro", label: "Economy", icon: <IconGlobe /> },
+      { href: "/learn", label: "Learn", icon: <IconSpark /> },
+    ],
+  },
+  {
+    group: "Advanced",
+    items: [
+      { href: "/analyst", label: "AI Analyst", icon: <IconSpark /> },
+      { href: "/strategies", label: "Strategies", icon: <IconTarget /> },
+      { href: "/setups", label: "Trade Ideas", icon: <IconZap /> },
+      { href: "/backtests", label: "Backtests", icon: <IconClock /> },
       { href: "/status", label: "System", icon: <IconPulse /> },
     ],
   },
@@ -66,8 +64,9 @@ export function Shell({ children }: { children: ReactNode }) {
             </div>
           ))}
         </nav>
-        <div className="border-t border-line-subtle p-4">
+        <div className="flex items-center justify-between gap-2 border-t border-line-subtle p-4">
           <LivePriceChip />
+          <ThemeToggle />
         </div>
       </aside>
 
@@ -75,7 +74,10 @@ export function Shell({ children }: { children: ReactNode }) {
       <div className="fixed inset-x-0 top-0 z-40 border-b border-line-subtle bg-panel/95 backdrop-blur lg:hidden">
         <div className="flex items-center justify-between px-4 py-2.5">
           <Brand compact />
-          <LivePriceChip compact />
+          <div className="flex items-center gap-2">
+            <LivePriceChip compact />
+            <ThemeToggle />
+          </div>
         </div>
         <nav className="flex gap-1 overflow-x-auto px-2 pb-2">
           {NAV.flatMap((g) => g.items).map((item) => {
@@ -101,14 +103,14 @@ export function Shell({ children }: { children: ReactNode }) {
 function Brand({ compact = false }: { compact?: boolean }) {
   return (
     <Link href="/" className="flex items-center gap-2.5 px-4 py-4">
-      <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-b from-[#f0c04a] to-[#c99414] text-[13px] font-bold text-[#231a02] shadow-[0_0_12px_rgba(230,180,34,0.25)]">
+      <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-b from-[#f0c04a] to-[#c99414] text-[13px] font-bold text-[#4a3503] shadow-[0_1px_3px_rgba(120,90,0,0.35)] dark:text-[#231a02]">
         ◆
       </span>
       <span className="leading-tight">
         <span className="block text-[13.5px] font-semibold tracking-tight text-ink">PMI</span>
         {!compact && (
           <span className="block text-[9.5px] font-medium uppercase tracking-[0.14em] text-faint">
-            Metals Intelligence
+            Gold Insights
           </span>
         )}
       </span>
@@ -124,13 +126,11 @@ function IconBase({ children }: { children: ReactNode }) {
     </svg>
   );
 }
-function IconGrid() {
+function IconHome() {
   return (
     <IconBase>
-      <rect x="1.5" y="1.5" width="5.5" height="5.5" rx="1" />
-      <rect x="9" y="1.5" width="5.5" height="5.5" rx="1" />
-      <rect x="1.5" y="9" width="5.5" height="5.5" rx="1" />
-      <rect x="9" y="9" width="5.5" height="5.5" rx="1" />
+      <path d="M2.5 7L8 2.5 13.5 7v6a1 1 0 01-1 1h-9a1 1 0 01-1-1V7z" />
+      <path d="M6.5 14v-4h3v4" />
     </IconBase>
   );
 }

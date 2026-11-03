@@ -67,37 +67,54 @@ export function GoldChart({ initialInterval = "1day" }: { initialInterval?: Time
   });
   const [latest, setLatest] = useState<IndicatorsResponse["latest"] | null>(null);
 
-  // create chart once
+  // create chart once — but re-theme when [data-theme] changes (light/dark)
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
+    const css = () => getComputedStyle(document.documentElement);
+    const themeOpts = () => {
+      const c = css();
+      return {
+        layout: {
+          textColor: c.getPropertyValue("--chart-text").trim() || "#6d7480",
+        },
+        grid: {
+          vertLines: { color: c.getPropertyValue("--chart-grid").trim() || "rgba(20,30,50,0.06)" },
+          horzLines: { color: c.getPropertyValue("--chart-grid").trim() || "rgba(20,30,50,0.06)" },
+        },
+        timeScale: { borderColor: c.getPropertyValue("--line").trim() || "rgba(20,30,50,0.1)" },
+        rightPriceScale: { borderColor: c.getPropertyValue("--line").trim() || "rgba(20,30,50,0.1)" },
+      };
+    };
+    const c = css();
     const chart = createChart(el, {
       layout: {
         background: { color: "transparent" },
-        textColor: "#8a8f98",
+        textColor: c.getPropertyValue("--chart-text").trim() || "#6d7480",
         fontFamily: "var(--font-geist-mono), monospace",
         fontSize: 11,
         attributionLogo: false,
       },
       grid: {
-        vertLines: { color: "rgba(255,255,255,0.03)" },
-        horzLines: { color: "rgba(255,255,255,0.03)" },
+        vertLines: { color: c.getPropertyValue("--chart-grid").trim() || "rgba(20,30,50,0.06)" },
+        horzLines: { color: c.getPropertyValue("--chart-grid").trim() || "rgba(20,30,50,0.06)" },
       },
       width: el.clientWidth,
       height: 400,
-      timeScale: { borderColor: "rgba(255,255,255,0.08)", timeVisible: true },
-      rightPriceScale: { borderColor: "rgba(255,255,255,0.08)" },
+      timeScale: { borderColor: c.getPropertyValue("--line").trim() || "rgba(20,30,50,0.1)", timeVisible: true },
+      rightPriceScale: { borderColor: c.getPropertyValue("--line").trim() || "rgba(20,30,50,0.1)" },
       crosshair: {
-        vertLine: { color: "rgba(230,180,34,0.35)", labelBackgroundColor: "#191a1b" },
-        horzLine: { color: "rgba(230,180,34,0.35)", labelBackgroundColor: "#191a1b" },
+        vertLine: { color: "rgba(199,143,10,0.4)", labelBackgroundColor: "#b8860b" },
+        horzLine: { color: "rgba(199,143,10,0.4)", labelBackgroundColor: "#b8860b" },
       },
     });
+    chart.applyOptions(themeOpts());
     const candles = chart.addSeries(CandlestickSeries, {
-      upColor: "#10b981",
-      downColor: "#f6465d",
+      upColor: c.getPropertyValue("--chart-up").trim() || "#059669",
+      downColor: c.getPropertyValue("--chart-down").trim() || "#e11d48",
       borderVisible: false,
-      wickUpColor: "#10b981",
-      wickDownColor: "#f6465d",
+      wickUpColor: c.getPropertyValue("--chart-up").trim() || "#059669",
+      wickDownColor: c.getPropertyValue("--chart-down").trim() || "#e11d48",
     });
     chartRef.current = chart;
     candleRef.current = candles;
@@ -115,8 +132,14 @@ export function GoldChart({ initialInterval = "1day" }: { initialInterval?: Time
       chart.applyOptions({ width: el.clientWidth });
     });
     observer.observe(el);
+    // live re-theme on light/dark toggle
+    const themeObserver = new MutationObserver(() => {
+      chart.applyOptions(themeOpts());
+    });
+    themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
     return () => {
       observer.disconnect();
+      themeObserver.disconnect();
       chart.remove();
       chartRef.current = null;
       candleRef.current = null;
