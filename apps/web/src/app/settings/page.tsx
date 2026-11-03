@@ -1,3 +1,4 @@
+import { connection } from "next/server";
 import { ThemeToggle } from "@/components/ThemeToggle";
 
 const API_INTERNAL_URL = process.env.API_INTERNAL_URL ?? "http://localhost:8000";
@@ -14,8 +15,10 @@ const CONFIG_ROWS: { label: string; value: string; note: string }[] = [
 ];
 
 export const metadata = { title: "Settings — PMI" };
+export const instant = false; // blocking dynamic route — status probes run per request
 
 async function StatusChips() {
+  await connection(); // runtime data — render per request, not at build
   const [apiOk, quantOk] = await Promise.all([
     fetch(`${API_INTERNAL_URL}/healthz`, { cache: "no-store", signal: AbortSignal.timeout(5000) })
       .then((r) => r.ok).catch(() => false),
