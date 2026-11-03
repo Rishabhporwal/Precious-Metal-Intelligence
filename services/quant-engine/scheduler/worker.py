@@ -41,6 +41,7 @@ CFTC_INTERVAL = int(os.environ.get("CFTC_INTERVAL_SECONDS", str(12 * 3600)))
 NEWS_INTERVAL = int(os.environ.get("NEWS_INTERVAL_SECONDS", "1800"))
 ANALYSIS_INTERVAL = int(os.environ.get("ANALYSIS_INTERVAL_SECONDS", str(12 * 3600)))
 VERDICT_INTERVAL = int(os.environ.get("VERDICT_INTERVAL_SECONDS", str(6 * 3600)))
+STRATEGY_VERDICT_INTERVAL = int(os.environ.get("STRATEGY_VERDICT_INTERVAL_SECONDS", str(15 * 60)))
 TRADING_INTERVAL = int(os.environ.get("TRADING_INTERVAL_SECONDS", "120"))
 
 
@@ -126,6 +127,22 @@ def sync_verdict() -> None:
         logger.warning("verdict generation failed: %s", exc)
 
 
+def sync_strategy_verdicts() -> None:
+    """Independent per-strategy verdicts (new spec §5), persisted snapshots."""
+    import urllib.request
+
+    req = urllib.request.Request(
+        "http://localhost:8001/v1/strategy-verdicts/evaluate?symbol=XAUUSD&interval=1h",
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=300) as resp:
+            body = json.loads(resp.read())
+        logger.info("strategy verdicts: %s", body.get("counts"))
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("strategy verdict evaluation failed: %s", exc)
+
+
 def sync_trading() -> None:
     """Paper-trade SL/TP monitoring, alert evaluation, setup evaluation (cheap, local)."""
     from app import alerts, paper
@@ -169,6 +186,7 @@ def run() -> None:
 
     sync_analysis()
     sync_verdict()
+    sync_strategy_verdicts()
     paper_mod.ensure_default_account()
     last["trading"] = time.monotonic()
 
@@ -194,6 +212,9 @@ def run() -> None:
             if now - last.get("verdict", 0) >= VERDICT_INTERVAL:
                 sync_verdict()
                 last["verdict"] = now
+            if now - last.get("strategy_verdicts", 0) >= STRATEGY_VERDICT_INTERVAL:
+                sync_strategy_verdicts()
+                last["strategy_verdicts"] = now
             if now - last.get("trading", 0) >= TRADING_INTERVAL:
                 sync_trading()
                 last["trading"] = now

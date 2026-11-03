@@ -161,25 +161,40 @@ def run() -> None:
                 ingest_candles(provider, instrument, provider_id, interval, BACKFILL_OUTPUTSIZE)
 
     last_candle_poll = 0.0
+    last_hourly_poll = 0.0
+    # Credit budget (free plan 800/day, gold only): quotes 288 + 1min 96 +
+    # hourly refresh 48 ≈ 432/day — leaves ~45% headroom.
+    HOURLY_POLL_SECONDS = int(os.environ.get("HOURLY_POLL_SECONDS", "1800"))
     while not stop:
         cycle_start = time.monotonic()
         instruments = enabled_instruments()  # re-read: verify flow may enable new ones
         if instruments:
             provider_id = twelvedata_provider_id()
+            now_wall = time.monotonic()
+            do_min = now_wall - last_candle_poll >= MIN_CANDLE_POLL_SECONDS
+            do_hour = now_wall - last_hourly_poll >= HOURLY_POLL_SECONDS
             for instrument in instruments:
                 if stop:
                     break
                 ingest_quote(provider, instrument, provider_id)
-                now = time.monotonic()
-                if now - last_candle_poll >= MIN_CANDLE_POLL_SECONDS:
+                if do_min:
                     # Refresh the most recent 1min candles (covers corrections too).
                     ingest_candles(
                         provider, instrument, provider_id, CandleInterval.MIN_1,
                         outputsize=10,
                         start=datetime.now(UTC) - timedelta(minutes=30),
                     )
-            if time.monotonic() - last_candle_poll >= MIN_CANDLE_POLL_SECONDS:
+                if do_hour:
+                    # Keep the hourly series live — strategies and verdicts run on it.
+                    ingest_candles(
+                        provider, instrument, provider_id, CandleInterval.HOUR_1,
+                        outputsize=30,
+                        start=datetime.now(UTC) - timedelta(hours=36),
+                    )
+            if do_min:
                 last_candle_poll = time.monotonic()
+            if do_hour:
+                last_hourly_poll = time.monotonic()
         else:
             logger.info("no enabled instruments yet — idling")
         # sleep until next quote poll, remaining responsive to shutdown

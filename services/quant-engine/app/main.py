@@ -10,6 +10,7 @@ from .api import (
     market_data,
     quant_stats,
     strategies,
+    strategy_verdicts,
     technical,
     trading,
     verdict,
@@ -28,6 +29,7 @@ app.include_router(quant_stats.router)
 app.include_router(analyst.router)
 app.include_router(trading.router)
 app.include_router(verdict.router)
+app.include_router(strategy_verdicts.router)
 app.include_router(backtests.router)
 app.include_router(dataquality_ep.router)
 

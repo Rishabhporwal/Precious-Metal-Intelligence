@@ -327,6 +327,21 @@ export async function registerMarketRoutes(app: FastifyInstance): Promise<void> 
     return reply.code(result.statusCode).send(result.body);
   });
 
+  app.get<{ Querystring: { symbol?: string; interval?: string } }>(
+    "/api/v1/strategy-verdicts/latest",
+    async (request, reply) => {
+      const symbol = ((request.query.symbol as string) ?? "XAUUSD").toUpperCase();
+      const interval = ((request.query.interval as string) ?? "1h").toLowerCase();
+      if (!SYMBOL_RE.test(symbol) || !INTERVAL_RE.test(interval)) {
+        return reply.code(400).send({
+          error: { code: "INVALID_PARAMS", message: "invalid symbol or interval" },
+        } satisfies ApiErrorResponse);
+      }
+      const result = await proxy(app, `/v1/strategy-verdicts/latest?symbol=${symbol}&interval=${interval}`);
+      return reply.code(result.statusCode).send(result.body);
+    },
+  );
+
   app.post("/api/v1/verdict/generate", async (request, reply) => {
     try {
       const q = (request.query as { symbol?: string })?.symbol ?? "XAUUSD";
