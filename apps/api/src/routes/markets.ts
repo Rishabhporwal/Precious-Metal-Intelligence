@@ -393,6 +393,15 @@ export async function registerMarketRoutes(app: FastifyInstance): Promise<void> 
     },
   );
 
+  app.get<{ Querystring: { limit?: string } }>(
+    "/api/v1/news/events",
+    async (request, reply) => {
+      const limit = Math.min(Math.max(parseInt((request.query.limit as string) ?? "20", 10) || 20, 1), 50);
+      const result = await proxy(app, `/v1/news/events?limit=${limit}`);
+      return reply.code(result.statusCode).send(result.body);
+    },
+  );
+
   app.get<{ Querystring: { symbol?: string; interval?: string } }>(
     "/api/v1/performance/summary",
     async (request, reply) => {

@@ -14,6 +14,7 @@ import hashlib
 import json
 import logging
 import os
+import re
 from functools import lru_cache
 
 import httpx
@@ -65,9 +66,11 @@ async def chat(messages: list[dict], cfg: LLMConfig | None = None, max_tokens: i
         cached = await redis.get(cache_key)
         if cached:
             payload = json.loads(cached)
-            payload["cache_hit"] = True
-            logger.info("LLM cache HIT (%s), cost avoided", cfg.model)
-            return payload
+            if payload.get("content"):  # poisoned-cache guard: never return empty content
+                payload["cache_hit"] = True
+                logger.info("LLM cache HIT (%s), cost avoided", cfg.model)
+                return payload
+            logger.warning("LLM cache had empty content — ignoring poisoned entry, calling live")
     except Exception as exc:  # noqa: BLE001 — cache problems degrade, never block
         logger.warning("LLM cache read failed: %s", exc)
 
@@ -83,6 +86,43 @@ async def chat(messages: list[dict], cfg: LLMConfig | None = None, max_tokens: i
             headers={"Authorization": f"Bearer {cfg.api_key}", "Content-Type": "application/json"},
             json=body,
         )
+        # Low-balance accounts: OpenRouter pre-authorizes max_tokens × price and
+        # returns 402 with the affordable budget. Retry ONCE at that budget, then
+        # once more on a FREE model (zero cost) so the pipeline never hard-stops.
+        if resp.status_code == 402:
+            m = re.search(r"can only afford (\d+)", resp.text)
+            if m and int(m.group(1)) >= 200:
+                body["max_tokens"] = int(int(m.group(1)) * 0.9)
+                logger.warning("LLM 402 — retrying with max_tokens=%s (low balance)", body["max_tokens"])
+                resp = await client.post(
+                    f"{BASE_URL}/chat/completions",
+                    headers={"Authorization": f"Bearer {cfg.api_key}", "Content-Type": "application/json"},
+                    json=body,
+                )
+        if resp.status_code in (402, 429):
+            # rotate through free models (zero cost, separate rate-limit pools)
+            fallback_models = [
+                os.environ.get("LLM_FALLBACK_MODEL", "google/gemma-4-31b-it:free"),
+                "nvidia/nemotron-3.5-lightning:free",
+                "google/gemma-4-26b-a4b-it:free",
+            ]
+            for fm in fallback_models:
+                if fm == body["model"]:
+                    continue
+                body["model"] = fm
+                logger.warning("LLM %s — falling back to free model %s", resp.status_code, fm)
+                resp = await client.post(
+                    f"{BASE_URL}/chat/completions",
+                    headers={"Authorization": f"Bearer {cfg.api_key}", "Content-Type": "application/json"},
+                    json=body,
+                )
+                if resp.status_code == 200:
+                    try:
+                        if resp.json().get("choices", [{}])[0].get("message", {}).get("content"):
+                            break  # usable content — accept this model
+                    except Exception:  # noqa: BLE001
+                        pass
+                    # empty content — rotate to the next free model
     if resp.status_code == 401:
         raise RuntimeError("OpenRouter rejected the API key")
     if resp.status_code == 429:
@@ -92,8 +132,11 @@ async def chat(messages: list[dict], cfg: LLMConfig | None = None, max_tokens: i
     if "choices" not in data:
         raise RuntimeError(f"OpenRouter unexpected response: {json.dumps(data)[:200]}")
 
+    content = data["choices"][0]["message"].get("content")
+    if not content:
+        raise RuntimeError("LLM returned empty content (all fallbacks exhausted)")
     payload = {
-        "content": data["choices"][0]["message"]["content"],
+        "content": content,
         "model": data.get("model", cfg.model),
         "usage": data.get("usage", {}),
         "cache_hit": False,

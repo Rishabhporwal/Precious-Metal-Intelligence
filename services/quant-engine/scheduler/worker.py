@@ -103,6 +103,12 @@ def sync_analysis() -> None:
 
             cls = await classify_news(limit=30)
             logger.info("news classification: %s", cls)
+            from news.clustering import cluster_events
+            from providers.llm import LLMConfig
+
+            if LLMConfig().configured:
+                clu = await cluster_events(LLMConfig())
+                logger.info("news clustering: %s", clu)
         except Exception as exc:  # noqa: BLE001
             logger.warning("news classification skipped: %s", exc)
 

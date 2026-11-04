@@ -15,6 +15,7 @@ COPY services/quant-engine/quant ./quant
 COPY services/quant-engine/ai ./ai
 COPY services/quant-engine/backtesting ./backtesting
 COPY services/quant-engine/signals ./signals
+COPY services/quant-engine/news ./news
 RUN pip install --no-cache-dir . \
     && chown -R appuser:appuser /engine
 

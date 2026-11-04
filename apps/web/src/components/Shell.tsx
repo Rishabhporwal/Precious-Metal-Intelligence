@@ -30,6 +30,7 @@ const NAV: { group: string; items: { href: string; label: string; icon: ReactNod
     group: "Market data",
     items: [
       { href: "/markets", label: "Prices", icon: <IconCandle /> },
+      { href: "/news", label: "World", icon: <IconGlobe /> },
       { href: "/macro", label: "Economy", icon: <IconGlobe /> },
       { href: "/learn", label: "Learn", icon: <IconSpark /> },
     ],
