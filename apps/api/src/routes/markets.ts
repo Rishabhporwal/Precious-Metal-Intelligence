@@ -342,6 +342,57 @@ export async function registerMarketRoutes(app: FastifyInstance): Promise<void> 
     },
   );
 
+  app.post("/api/v1/signals/generate", async (request, reply) => {
+    try {
+      const q = (request.query as { symbol?: string; interval?: string }) ?? {};
+      const params = new URLSearchParams({
+        symbol: (q.symbol ?? "XAUUSD").toUpperCase(),
+        interval: (q.interval ?? "1h").toLowerCase(),
+      });
+      const res = await fetch(
+        `${app.config.quantInternalUrl}/v1/signals/generate?${params.toString()}`,
+        { method: "POST", signal: AbortSignal.timeout(600000) },
+      );
+      const payload = await res.json().catch(() => null);
+      return reply.code(res.ok ? 200 : res.status).send(payload);
+    } catch (err) {
+      app.log.error({ err }, "signal generation failed");
+      return reply.code(502).send({
+        error: { code: "UPSTREAM_ERROR", message: "signal generation failed" },
+      } satisfies ApiErrorResponse);
+    }
+  });
+
+  app.get<{ Querystring: { symbol?: string; interval?: string } }>(
+    "/api/v1/signals/latest",
+    async (request, reply) => {
+      const symbol = ((request.query.symbol as string) ?? "XAUUSD").toUpperCase();
+      const interval = ((request.query.interval as string) ?? "1h").toLowerCase();
+      if (!SYMBOL_RE.test(symbol) || !INTERVAL_RE.test(interval)) {
+        return reply.code(400).send({
+          error: { code: "INVALID_PARAMS", message: "invalid symbol or interval" },
+        } satisfies ApiErrorResponse);
+      }
+      const result = await proxy(app, `/v1/signals/latest?symbol=${symbol}&interval=${interval}`);
+      return reply.code(result.statusCode).send(result.body);
+    },
+  );
+
+  app.get<{ Querystring: { symbol?: string; interval?: string } }>(
+    "/api/v1/signals/history",
+    async (request, reply) => {
+      const symbol = ((request.query.symbol as string) ?? "XAUUSD").toUpperCase();
+      const interval = ((request.query.interval as string) ?? "1h").toLowerCase();
+      if (!SYMBOL_RE.test(symbol) || !INTERVAL_RE.test(interval)) {
+        return reply.code(400).send({
+          error: { code: "INVALID_PARAMS", message: "invalid symbol or interval" },
+        } satisfies ApiErrorResponse);
+      }
+      const result = await proxy(app, `/v1/signals/history?symbol=${symbol}&interval=${interval}`);
+      return reply.code(result.statusCode).send(result.body);
+    },
+  );
+
   app.get<{ Querystring: { symbol?: string; interval?: string } }>(
     "/api/v1/performance/summary",
     async (request, reply) => {

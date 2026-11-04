@@ -12,7 +12,6 @@ from strategies.ict_p1 import (
     SessionRangeBreakoutStrategy,
 )
 from strategies.quant_strategies import (
-    HiddenDivergenceStrategy,
     TrendExhaustionStrategy,
     VolatilityRegimeStrategy,
     WyckoffSosSowStrategy,
@@ -22,7 +21,6 @@ from strategies.quant_strategies import (
 def _ctx(closes, highs=None, lows=None):
     rows = []
     t0 = datetime(2026, 6, 1, tzinfo=UTC)  # a Monday, so hour 0 = daily boundary
-    n = len(closes)
     for i, c in enumerate(closes):
         rows.append({
             "market_ts": t0 + timedelta(hours=i),

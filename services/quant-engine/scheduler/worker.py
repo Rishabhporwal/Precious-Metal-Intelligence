@@ -42,6 +42,7 @@ NEWS_INTERVAL = int(os.environ.get("NEWS_INTERVAL_SECONDS", "1800"))
 ANALYSIS_INTERVAL = int(os.environ.get("ANALYSIS_INTERVAL_SECONDS", str(12 * 3600)))
 VERDICT_INTERVAL = int(os.environ.get("VERDICT_INTERVAL_SECONDS", str(6 * 3600)))
 STRATEGY_VERDICT_INTERVAL = int(os.environ.get("STRATEGY_VERDICT_INTERVAL_SECONDS", str(15 * 60)))
+SIGNAL_INTERVAL = int(os.environ.get("SIGNAL_INTERVAL_SECONDS", str(15 * 60)))
 TRADING_INTERVAL = int(os.environ.get("TRADING_INTERVAL_SECONDS", "120"))
 
 
@@ -143,6 +144,23 @@ def sync_strategy_verdicts() -> None:
         logger.warning("strategy verdict evaluation failed: %s", exc)
 
 
+def sync_signals() -> None:
+    """Trading signals (enhancement spec §2): 9-state decision layer."""
+    import urllib.request
+
+    req = urllib.request.Request(
+        "http://localhost:8001/v1/signals/generate?symbol=XAUUSD&interval=1h",
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=600) as resp:
+            body = json.loads(resp.read())
+        logger.info("signal: %s (score %s, veto %s)", body.get("signal_type"),
+                    body.get("score"), body.get("event_veto"))
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("signal generation failed: %s", exc)
+
+
 def sync_trading() -> None:
     """Paper-trade SL/TP monitoring, alert evaluation, setup evaluation (cheap, local)."""
     from app import alerts, paper
@@ -187,6 +205,7 @@ def run() -> None:
     sync_analysis()
     sync_verdict()
     sync_strategy_verdicts()
+    sync_signals()
     paper_mod.ensure_default_account()
     last["trading"] = time.monotonic()
 
@@ -215,6 +234,9 @@ def run() -> None:
             if now - last.get("strategy_verdicts", 0) >= STRATEGY_VERDICT_INTERVAL:
                 sync_strategy_verdicts()
                 last["strategy_verdicts"] = now
+            if now - last.get("signals", 0) >= SIGNAL_INTERVAL:
+                sync_signals()
+                last["signals"] = now
             if now - last.get("trading", 0) >= TRADING_INTERVAL:
                 sync_trading()
                 last["trading"] = now

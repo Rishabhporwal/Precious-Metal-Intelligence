@@ -149,6 +149,34 @@ def _levels_from_structure(
     }
 
 
+def event_veto(events: list[dict], now: datetime | None = None) -> tuple[bool, list[dict]]:
+    """High-impact release within 48h (by name match) — shared by verdict + signals."""
+    now = now or datetime.now(UTC)
+    HIGH_IMPACT = ("cpi", "nonfarm", "non-farm", "nfp", "fomc", "federal funds", "pce")
+    veto_events: list[dict] = []
+    seen_events: set[tuple[str, str]] = set()
+    today = now.date()
+    for e in events:
+        name = (e.get("release_name") or "").lower()
+        if "claims" in name:  # weekly jobless claims are routine, not high-impact
+            continue
+        if not any(p in name for p in HIGH_IMPACT):
+            continue
+        try:
+            raw_date = e["event_date"]
+            d = raw_date if isinstance(raw_date, datetime) else datetime.fromisoformat(str(raw_date))
+            d_date = d.date() if isinstance(d, datetime) else d
+        except ValueError:
+            continue
+        if today <= d_date <= today + timedelta(days=2):
+            key = (e.get("release_name") or "", str(d_date))
+            if key in seen_events:
+                continue
+            seen_events.add(key)
+            veto_events.append(e)
+    return bool(veto_events), veto_events
+
+
 def build_verdict(
     symbol: str,
     quote_price: float | None,
@@ -185,25 +213,7 @@ def build_verdict(
 
     score, drivers = _direction_score(trend_daily, trend_hourly, strategy_bias, news_net)
 
-    # Event veto: high-impact release inside 48h -> stand aside, no directional plan.
-    # economic_events has no impact column — classify by release name (deterministic).
-    HIGH_IMPACT = ("cpi", "nonfarm", "non-farm", "nfp", "fomc", "federal funds",
-                   "pce", "unemployment", "payroll", "interest rate")
-    veto_events = []
-    today = now.date()
-    for e in events:
-        name = (e.get("release_name") or "").lower()
-        if not any(p in name for p in HIGH_IMPACT):
-            continue
-        try:
-            raw_date = e["event_date"]
-            d = raw_date if isinstance(raw_date, datetime) else datetime.fromisoformat(str(raw_date))
-            d_date = d.date() if isinstance(d, datetime) else d
-        except ValueError:
-            continue
-        if today <= d_date <= today + timedelta(days=2):
-            veto_events.append(e)
-    veto = bool(veto_events)
+    veto, veto_events = event_veto(events, now)
 
     if veto:
         direction = "neutral"

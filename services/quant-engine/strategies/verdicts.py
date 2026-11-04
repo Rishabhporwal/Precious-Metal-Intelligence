@@ -28,6 +28,8 @@ CORRELATED_GROUPS: dict[str, list[str]] = {
     "patterns": ["price_action_failed_breakout", "quant_hidden_div", "quant_exhaustion"],
     "wyckoff": ["wyckoff_spring", "wyckoff_upthrust", "wyckoff_sos_sow"],
     "sessions": ["ict_judas", "ict_amd", "ict_silver_bullet", "ict_session_breakout", "ict_liquidity_void", "quant_vol_regime"],
+    "trend": ["mom_trend_cont", "mom_ema_align", "mom_hh_hl", "mom_mtf_align", "mom_pullback"],
+    "breakout": ["mom_breakout_retest", "mom_range_breakout", "mom_expansion"],
 }
 
 # verdict window per interval: how fresh a detection must be to count as the

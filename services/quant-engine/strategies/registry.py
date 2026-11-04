@@ -18,6 +18,16 @@ from strategies.ict_p1 import (
     LiquidityVoidStrategy,
     SessionRangeBreakoutStrategy,
 )
+from strategies.momentum import (
+    BreakoutRetestStrategy,
+    EmaAlignmentStrategy,
+    HigherHighsStrategy,
+    MomentumExpansionStrategy,
+    MultiTimeframeAlignmentStrategy,
+    PullbackInTrendStrategy,
+    RangeBreakoutStrategy,
+    TrendContinuationStrategy,
+)
 from strategies.quant_strategies import (
     HiddenDivergenceStrategy,
     TrendExhaustionStrategy,
@@ -52,6 +62,14 @@ ALL_STRATEGIES: list[type[Strategy]] = [
     WyckoffSpringStrategy,
     WyckoffUpthrustStrategy,
     SMTDivergenceStrategy,
+    TrendContinuationStrategy,
+    BreakoutRetestStrategy,
+    RangeBreakoutStrategy,
+    MomentumExpansionStrategy,
+    EmaAlignmentStrategy,
+    HigherHighsStrategy,
+    PullbackInTrendStrategy,
+    MultiTimeframeAlignmentStrategy,
     JudasSwingStrategy,
     AmdPowerOfThreeStrategy,
     IctSilverBulletStrategy,

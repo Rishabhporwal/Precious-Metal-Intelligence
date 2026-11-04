@@ -2,6 +2,7 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { LiveTicker } from "@/components/LiveTicker";
 import { VerdictCard, VerdictSkeleton } from "@/components/VerdictCard";
+import { SignalCard } from "@/components/SignalCard";
 
 const API_INTERNAL_URL = process.env.API_INTERNAL_URL ?? "http://localhost:8000";
 
@@ -106,7 +107,8 @@ async function Brief() {
 
   return (
     <div className="space-y-4">
-      {/* THE CALL — verdict first */}
+      {/* THE CALL — trading signal first, verdict evidence below */}
+      <SignalCard />
       <VerdictCard />
 
       {/* Market context below */}
