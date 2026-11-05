@@ -8,6 +8,7 @@ from datetime import UTC, datetime
 from fastapi import APIRouter, Query
 
 from app.db import get_pool
+from signals.backtest import run_signal_backtest
 from signals.missed import scan_missed
 
 router = APIRouter(prefix="/v1/signals", tags=["missed-opportunities"])
@@ -55,3 +56,19 @@ def missed(
             for r in rows
         ],
     }
+
+
+@router.post("/backtest")
+def signal_backtest(
+    symbol: str = Query(default="XAUUSD"),
+    interval: str = Query(default="1h"),
+    days: int = Query(default=30, ge=7, le=120),
+    step_hours: int = Query(default=4, ge=1, le=24),
+) -> dict:
+    """Replay deterministic signal rules on prefixes; pessimistic grading.
+
+    TECHNICAL-ONLY scope: historical news sentiment cannot be reconstructed,
+    so the news vote and veto are absent for most of the window. Threshold
+    sanity check, not a performance promise.
+    """
+    return run_signal_backtest(symbol.upper(), interval, days, step_hours)

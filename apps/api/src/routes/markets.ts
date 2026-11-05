@@ -215,11 +215,6 @@ export async function registerMarketRoutes(app: FastifyInstance): Promise<void> 
     return reply.code(result.statusCode).send(result.body);
   });
 
-  app.get("/api/v1/setups", async (_request, reply) => {
-    const result = await proxy(app, "/v1/setups");
-    return reply.code(result.statusCode).send(result.body);
-  });
-
   app.post<{ Querystring: { symbol?: string; interval?: string } }>(
     "/api/v1/strategies/evaluate_setups",
     async (request, reply) => {
@@ -326,21 +321,6 @@ export async function registerMarketRoutes(app: FastifyInstance): Promise<void> 
     const result = await proxy(app, `/v1/verdict/latest?symbol=${symbol}`);
     return reply.code(result.statusCode).send(result.body);
   });
-
-  app.get<{ Querystring: { symbol?: string; interval?: string } }>(
-    "/api/v1/confluence/latest",
-    async (request, reply) => {
-      const symbol = ((request.query.symbol as string) ?? "XAUUSD").toUpperCase();
-      const interval = ((request.query.interval as string) ?? "1h").toLowerCase();
-      if (!SYMBOL_RE.test(symbol) || !INTERVAL_RE.test(interval)) {
-        return reply.code(400).send({
-          error: { code: "INVALID_PARAMS", message: "invalid symbol or interval" },
-        } satisfies ApiErrorResponse);
-      }
-      const result = await proxy(app, `/v1/confluence/latest?symbol=${symbol}&interval=${interval}`);
-      return reply.code(result.statusCode).send(result.body);
-    },
-  );
 
   app.post("/api/v1/signals/generate", async (request, reply) => {
     try {

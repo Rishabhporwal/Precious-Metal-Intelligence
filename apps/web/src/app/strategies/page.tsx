@@ -1,5 +1,7 @@
 import { Suspense } from "react";
 
+import { PerformanceView } from "@/components/PerformanceView";
+
 const API_INTERNAL_URL = process.env.API_INTERNAL_URL ?? "http://localhost:8000";
 
 interface StrategyInfo {
@@ -219,14 +221,17 @@ export default function StrategiesPage() {
     <main className="page rise">
       <div className="mx-auto max-w-5xl">
         <header className="mb-6">
-          <h1 className="page-title">Advanced Strategies</h1>
+          <h1 className="page-title">Strategy Lab</h1>
           <p className="mt-1 text-xs text-muted">
-            The patterns our engine watches for — the technical view
+            Every pattern the engine watches, and how each has actually performed
           </p>
         </header>
         <Suspense fallback={<StrategiesSkeleton />}>
           <StrategiesData />
         </Suspense>
+        <div className="mt-8">
+          <PerformanceView />
+        </div>
         <footer className="mt-8 border-t border-line-subtle pt-4 text-[10.5px] text-faint">
           <a className="text-muted underline" href="/">← dashboard</a> ·
           detections persist append-only in Postgres with algo version + params for reproducibility
