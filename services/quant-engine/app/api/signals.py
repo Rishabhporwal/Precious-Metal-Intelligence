@@ -16,6 +16,7 @@ from providers.base import CandleInterval
 from quant.cross_market import cross_market_summary
 from quant.regimes import regime_report
 from signals.engine import decide, grade
+from signals.reconcile import build_reconciliation
 
 router = APIRouter(prefix="/v1/signals", tags=["signals"])
 
@@ -101,13 +102,41 @@ def generate(symbol: str = Query(default="XAUUSD"), interval: str = Query(defaul
         "plain": cross_note,
     })
 
+    # evidence reconciliation (§9): four explicit verdicts before the final call
+    news_articles_all = __import__("app.macrodata", fromlist=["latest_news"]).latest_news(60)
+    news_net = sum(1 for a in news_articles_all if a.get("sentiment") == "bullish") - sum(
+        1 for a in news_articles_all if a.get("sentiment") == "bearish")
+    news_classified = sum(1 for a in news_articles_all if a.get("sentiment"))
+    with get_pool().connection() as conn:
+        rc = conn.execute(
+            """
+            SELECT
+                count(*) FILTER (WHERE verdict = 'confirms') AS confirms,
+                count(*) FILTER (WHERE verdict = 'contradicts') AS contradicts,
+                count(*) FILTER (WHERE verdict = 'ambiguous') AS ambiguous,
+                count(*) FILTER (WHERE verdict = 'pending') AS pending
+            FROM event_reactions r
+            JOIN news_events e ON e.id = r.event_id
+            WHERE e.status = 'open'
+            """
+        ).fetchone()
+    reaction_counts = {k: int(rc[k] or 0) for k in ("confirms", "contradicts", "ambiguous", "pending")}
+    reconciliation = build_reconciliation(
+        verdicts=verdicts, news_net=news_net, news_classified=news_classified,
+        high_impact_events=veto_events, reaction_counts=reaction_counts,
+        regime=regime, cross_market=decision.get("cross_market", {}),
+    )
+    decision["reconciliation"] = reconciliation
+
+
     with get_pool().connection() as conn:
         cur = conn.execute(
             """
             INSERT INTO trading_signals
                 (symbol, interval, signal_type, expires_at, price, score, regime, confidence,
-                 drivers, plan, invalidation_level, regime_snapshot, strategy_relevance, note)
-            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+                 drivers, plan, invalidation_level, regime_snapshot, strategy_relevance, note,
+                 reconciliation)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
             RETURNING id, created_at
             """,
             (
@@ -117,6 +146,7 @@ def generate(symbol: str = Query(default="XAUUSD"), interval: str = Query(defaul
                 json.dumps(decision.get("plan")), decision.get("invalidation_level"),
                 json.dumps(regime), json.dumps(decision.get("strategy_relevance", [])),
                 decision.get("note"),
+                json.dumps(reconciliation),
             ),
         )
         row = cur.fetchone()

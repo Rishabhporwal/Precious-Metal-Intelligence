@@ -2,7 +2,16 @@ import { VerdictRefresh } from "@/components/VerdictRefresh";
 
 const API_INTERNAL_URL = process.env.API_INTERNAL_URL ?? "http://localhost:8000";
 
+interface Reconciliation {
+  technical?: { verdict: string; detail: string };
+  fundamental?: { verdict: string; detail: string };
+  market_reaction?: { verdict: string; detail: string };
+  quantitative?: { verdict: string; detail: string };
+  cross_market?: { nudge: number; detail: string };
+}
+
 interface Signal {
+  reconciliation?: Reconciliation;
   signal_type: string;
   confidence: string;
   score: number | string;
@@ -91,6 +100,26 @@ export async function SignalCard() {
       </div>
 
       {s.note && <p className="plain-lead mt-3">{s.note}</p>}
+
+      {/* §9: the four evidence-group verdicts, shown explicitly */}
+      {s.reconciliation && (
+        <div className="mt-5 grid gap-3 sm:grid-cols-2">
+          {([
+            ["Technical", s.reconciliation.technical],
+            ["Fundamental", s.reconciliation.fundamental],
+            ["Market reaction", s.reconciliation.market_reaction],
+            ["Quantitative", s.reconciliation.quantitative],
+          ] as const).map(([label, grp]) => grp && (
+            <div key={label} className="rounded-xl border border-line-subtle bg-raised p-4">
+              <div className="flex items-center justify-between gap-2">
+                <span className="card-title">{label}</span>
+                <span className="pill">{grp.verdict}</span>
+              </div>
+              <p className="mt-1.5 text-[11.5px] leading-relaxed text-muted">{grp.detail}</p>
+            </div>
+          ))}
+        </div>
+      )}
 
       {hasPlan && s.plan ? (
         <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">

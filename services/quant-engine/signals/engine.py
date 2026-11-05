@@ -68,6 +68,10 @@ for _sid in MOMENTUM_IDS:
     FAMILY_OF[_sid] = "momentum"
 
 
+def _freshness(v: dict) -> str:
+    return v.get("last_detection") or ""
+
+
 def _regime_classify(regime: dict, score: float) -> str:
     """Named regime per enhancement spec §8, from quant regime states + score."""
     trend = (regime.get("trend") or {}).get("trend", "sideways")
@@ -122,12 +126,11 @@ def decide(
         g = group_of.get(v["strategy_id"])
         if g is None:
             singles.append(v)
-        elif g not in seen or abs(weight_for(verdicts[0])) >= 0:
-            if g not in seen:
-                seen[g] = v
-            else:
-                # keep the one with fresher evidence (later in list = evaluated later)
-                seen[g] = v
+            continue
+        # freshest evidence carries the group weight (§7: no double-counting)
+        prev = seen.get(g)
+        if prev is None or _freshness(v) > _freshness(prev):
+            seen[g] = v
     deduped = list(seen.values()) + singles
 
     bull = [v for v in deduped if v["verdict"] == "BULLISH"]
