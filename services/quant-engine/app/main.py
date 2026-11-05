@@ -13,6 +13,7 @@ from .api import (
     performance,
     quant_stats,
     signals,
+    intelligence,
     strategies,
     strategy_verdicts,
     technical,
@@ -37,6 +38,7 @@ app.include_router(strategy_verdicts.router)
 app.include_router(performance.router)
 app.include_router(confluence_ep.router)
 app.include_router(signals.router)
+app.include_router(intelligence.router)
 app.include_router(news_events_ep.router)
 app.include_router(backtests.router)
 app.include_router(dataquality_ep.router)

@@ -17,6 +17,8 @@ def events(limit: int = Query(default=20, ge=1, le=50)) -> dict:
             SELECT e.id, e.title, e.category, e.region, e.entities, e.importance,
                    e.gold_impact, e.verification_status, e.sources_count, e.source_names,
                    e.status, e.first_seen, e.last_update,
+                   r.pre_return_pct, r.post_return_pct, r.verdict AS reaction_verdict,
+                   r.measured_at AS reaction_measured_at,
                    (
                      SELECT json_agg(json_build_object(
                          'title', a.title, 'source', a.source, 'url', a.url,
@@ -24,6 +26,7 @@ def events(limit: int = Query(default=20, ge=1, le=50)) -> dict:
                      FROM news_articles a WHERE a.event_id = e.id
                    ) AS articles
             FROM news_events e
+            LEFT JOIN event_reactions r ON r.event_id = e.id
             ORDER BY e.last_update DESC LIMIT %s
             """,
             (limit,),
@@ -47,6 +50,12 @@ def events(limit: int = Query(default=20, ge=1, le=50)) -> dict:
                 "first_seen": r["first_seen"].isoformat() if r["first_seen"] else None,
                 "last_update": r["last_update"].isoformat() if r["last_update"] else None,
                 "articles": r["articles"] or [],
+                "reaction": {
+                    "pre_return_pct": r["pre_return_pct"],
+                    "post_return_pct": r["post_return_pct"],
+                    "verdict": r["reaction_verdict"],
+                    "measured_at": r["reaction_measured_at"].isoformat() if r["reaction_measured_at"] else None,
+                },
             }
             for r in rows
         ],

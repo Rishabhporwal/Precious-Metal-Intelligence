@@ -13,6 +13,7 @@ from app.db import get_pool
 from app.macrodata import upcoming_events
 from app.marketdata import store
 from providers.base import CandleInterval
+from quant.cross_market import cross_market_summary
 from quant.regimes import regime_report
 from signals.engine import decide, grade
 
@@ -60,6 +61,27 @@ def generate(symbol: str = Query(default="XAUUSD"), interval: str = Query(defaul
         )
         prev = cur.fetchone()
 
+    # cross-market evidence (§9 group): supports/contradicts vs recent gold move
+    cross = cross_market_summary(symbol, days=60)
+    factors_ok = [f for f in cross.get("factors", []) if f.get("status") == "ok"]
+    supporting = sum(1 for f in factors_ok if f.get("relation_to_gold_move") == "supports")
+    contradicting = sum(1 for f in factors_ok if f.get("relation_to_gold_move") == "contradicts")
+    cross_nudge = 0.0
+    cross_note = "cross-market neutral / insufficient data"
+    if factors_ok and supporting != contradicting:
+        dominant_dir = 1 if score_hint(verdicts) > 0 else -1
+        move_dir = 1 if (cross.get("gold_change_pct_window") or 0) > 0 else -1
+        relation_majority = "supports" if supporting > contradicting else "contradicts"
+        if relation_majority == "supports" and dominant_dir == move_dir:
+            cross_nudge = 0.5
+        elif relation_majority == "contradicts" and dominant_dir == move_dir:
+            cross_nudge = -0.5
+        cross_note = f"cross-market: {supporting} factors support recent move, {contradicting} contradict"
+
+    # transparent cross-market nudge: apply to the verdict score before the decision
+    for v in verdicts:
+        pass  # verdicts stay untouched — nudge is applied to score, documented in output
+
     decision = decide(
         verdicts=verdicts,
         regime=regime,
@@ -70,6 +92,14 @@ def generate(symbol: str = Query(default="XAUUSD"), interval: str = Query(defaul
         plan_levels=bv.get("plan"),
         interval=interval,
     )
+    decision["score"] = round(decision["score"] + cross_nudge, 2)
+    decision["cross_market"] = {"nudge": cross_nudge, "note": cross_note,
+                                 "supporting": supporting, "contradicting": contradicting}
+    decision["drivers"].append({
+        "strategy": "Cross-market (USD / yields / real yields)",
+        "verdict": "supports" if cross_nudge > 0 else "contradicts" if cross_nudge < 0 else "neutral",
+        "plain": cross_note,
+    })
 
     with get_pool().connection() as conn:
         cur = conn.execute(
@@ -104,6 +134,12 @@ def generate(symbol: str = Query(default="XAUUSD"), interval: str = Query(defaul
         "invalidations": bv.get("invalidations"),
         "graded_this_cycle": graded,
     }
+
+
+def score_hint(verdicts: list[dict]) -> float:
+    bull = sum(1 for v in verdicts if v["verdict"] == "BULLISH")
+    bear = sum(1 for v in verdicts if v["verdict"] == "BEARISH")
+    return bull - bear
 
 
 def grade_expired(symbol: str, interval: str) -> int:
