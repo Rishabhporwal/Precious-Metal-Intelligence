@@ -12,7 +12,6 @@ const NAV: { group: string; items: { href: string; label: string; icon: ReactNod
     group: "For you",
     items: [
       { href: "/", label: "Home", icon: <IconHome /> },
-      { href: "/paper", label: "My Practice", icon: <IconBook /> },
       { href: "/alerts", label: "Alerts", icon: <IconBell /> },
     ],
   },

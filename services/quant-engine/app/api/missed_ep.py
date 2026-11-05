@@ -2,9 +2,6 @@
 
 from __future__ import annotations
 
-import json
-from datetime import UTC, datetime
-
 from fastapi import APIRouter, Query
 
 from app.db import get_pool

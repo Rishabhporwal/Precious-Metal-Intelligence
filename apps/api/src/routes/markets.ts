@@ -263,54 +263,6 @@ export async function registerMarketRoutes(app: FastifyInstance): Promise<void> 
     return reply.code(res.ok ? 200 : res.status).send(payload);
   });
 
-  app.get("/api/v1/paper/accounts", async (_request, reply) => {
-    const result = await proxy(app, "/v1/paper/accounts");
-    return reply.code(result.statusCode).send(result.body);
-  });
-
-  app.post("/api/v1/paper/trades", async (request, reply) => {
-    const res = await fetch(`${app.config.quantInternalUrl}/v1/paper/trades`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(request.body ?? {}),
-      signal: AbortSignal.timeout(15000),
-    });
-    const payload = await res.json().catch(() => null);
-    return reply.code(res.ok ? 200 : res.status).send(payload);
-  });
-
-  app.get<{ Querystring: { status?: string } }>("/api/v1/paper/trades", async (request, reply) => {
-    const result = await proxy(app, `/v1/paper/trades?status=${request.query.status ?? "all"}`);
-    return reply.code(result.statusCode).send(result.body);
-  });
-
-  app.post<{ Params: { id?: string }; Querystring: { reason?: string } }>(
-    "/api/v1/paper/trades/:id/close",
-    async (request, reply) => {
-      const id = parseInt(request.params.id ?? "0", 10);
-      if (!Number.isInteger(id) || id <= 0) {
-        return reply.code(400).send({
-          error: { code: "INVALID_ID", message: "trade id must be a positive integer" },
-        } satisfies ApiErrorResponse);
-      }
-      const res = await fetch(
-        `${app.config.quantInternalUrl}/v1/paper/trades/${id}/close?reason=${request.query.reason ?? "manual"}`,
-        { method: "POST", signal: AbortSignal.timeout(15000) },
-      );
-      const payload = await res.json().catch(() => null);
-      return reply.code(res.ok ? 200 : res.status).send(payload);
-    },
-  );
-
-  app.post("/api/v1/paper/monitor", async (_request, reply) => {
-    const res = await fetch(`${app.config.quantInternalUrl}/v1/paper/monitor`, {
-      method: "POST",
-      signal: AbortSignal.timeout(30000),
-    });
-    const payload = await res.json().catch(() => null);
-    return reply.code(res.ok ? 200 : res.status).send(payload);
-  });
-
   app.get<{ Querystring: { symbol?: string } }>("/api/v1/verdict/latest", async (request, reply) => {
     const symbol = ((request.query.symbol as string) ?? "XAUUSD").toUpperCase();
     if (!SYMBOL_RE.test(symbol)) {

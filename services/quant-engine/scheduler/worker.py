@@ -43,7 +43,6 @@ ANALYSIS_INTERVAL = int(os.environ.get("ANALYSIS_INTERVAL_SECONDS", str(12 * 360
 VERDICT_INTERVAL = int(os.environ.get("VERDICT_INTERVAL_SECONDS", str(6 * 3600)))
 STRATEGY_VERDICT_INTERVAL = int(os.environ.get("STRATEGY_VERDICT_INTERVAL_SECONDS", str(15 * 60)))
 SIGNAL_INTERVAL = int(os.environ.get("SIGNAL_INTERVAL_SECONDS", str(15 * 60)))
-TRADING_INTERVAL = int(os.environ.get("TRADING_INTERVAL_SECONDS", "120"))
 
 
 def sync_macro(fred: FredProvider) -> None:
@@ -167,11 +166,10 @@ def sync_signals() -> None:
         logger.warning("signal generation failed: %s", exc)
 
 
-def sync_trading() -> None:
-    """Paper-trade SL/TP monitoring, alert evaluation, setup evaluation (cheap, local)."""
-    from app import alerts, paper
+def sync_alerts_and_setups() -> None:
+    """Alert evaluation + setup evaluation (cheap, local)."""
+    from app import alerts
 
-    closed = paper.monitor_open_trades()
     alert_counts = alerts.evaluate_all()
     setups = 0
     try:
@@ -185,7 +183,7 @@ def sync_trading() -> None:
             setups = r.json().get("valid_created", 0)
     except Exception as exc:  # noqa: BLE001
         logger.debug("setup evaluation skipped: %s", exc)
-    logger.info("trading sync: closed=%s alerts=%s new_valid_setups=%s", closed, alert_counts, setups)
+    logger.info("alerts+setups sync: alerts=%s new_valid_setups=%s", alert_counts, setups)
 
 
 def run() -> None:
@@ -206,14 +204,11 @@ def run() -> None:
     last["cftc"] = time.monotonic()
     sync_news()
     last["news"] = time.monotonic()
-    from app import paper as paper_mod
 
     sync_analysis()
     sync_verdict()
     sync_strategy_verdicts()
     sync_signals()
-    paper_mod.ensure_default_account()
-    last["trading"] = time.monotonic()
 
     while True:
         time.sleep(30)
@@ -243,9 +238,9 @@ def run() -> None:
             if now - last.get("signals", 0) >= SIGNAL_INTERVAL:
                 sync_signals()
                 last["signals"] = now
-            if now - last.get("trading", 0) >= TRADING_INTERVAL:
-                sync_trading()
-                last["trading"] = now
+            if now - last.get("alerts", 0) >= ALERTS_INTERVAL:
+                sync_alerts_and_setups()
+                last["alerts"] = now
         except Exception:
             logger.exception("scheduler cycle failed")
 

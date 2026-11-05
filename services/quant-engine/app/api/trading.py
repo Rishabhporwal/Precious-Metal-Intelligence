@@ -7,7 +7,7 @@ import json
 from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel
 
-from app import alerts, paper, risk
+from app import alerts, risk
 from app.db import get_pool
 from app.marketdata import store
 from strategies import engine as strategy_engine
@@ -104,76 +104,7 @@ def list_setups(symbol: str = Query(default="XAUUSD"), limit: int = Query(defaul
     }
 
 
-class PaperOpenRequest(BaseModel):
-    symbol: str = "XAUUSD"
-    direction: str  # long | short
-    size: float | None = None      # oz; if omitted, risk-based sizing needs stop
-    stop: float | None = None
-    target: float | None = None
-    setup_id: int | None = None
-    account_id: int | None = None
-
-
 # --------------------------------------------------------------- paper ---
-
-
-@router.get("/paper/accounts")
-def accounts() -> dict:
-    aid = paper.ensure_default_account()
-    return paper.account_summary(aid)
-
-
-@router.post("/paper/trades")
-def open_paper_trade(req: PaperOpenRequest) -> dict:
-    symbol = req.symbol.upper()
-    if req.direction not in ("long", "short"):
-        raise HTTPException(status_code=400, detail="direction must be long|short")
-    aid = req.account_id or paper.ensure_default_account()
-    try:
-        size = req.size
-        if size is None:
-            if req.stop is None:
-                raise HTTPException(status_code=400, detail="provide size or stop (for risk-based sizing)")
-            with get_pool().connection() as conn:
-                inst = store.get_instrument_by_symbol(conn, symbol)
-                q = store.get_latest_quote(conn, inst["id"]) if inst else None
-            entry = float(q["price"]) if q and q["price"] else None
-            if entry is None:
-                raise HTTPException(status_code=409, detail="no fresh quote for sizing")
-            preview = risk.position_preview(symbol, entry, req.stop)
-            size = preview["position_size"]
-            if size <= 0:
-                raise HTTPException(status_code=400, detail="sizing rounds to zero")
-        trade = paper.open_trade(aid, symbol, req.direction, size, req.stop, req.target, req.setup_id)
-        return {"opened": True, "trade": trade, "simulated": True}
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
-
-
-@router.get("/paper/trades")
-def list_paper_trades(status: str = Query(default="all")) -> dict:
-    aid = paper.ensure_default_account()
-    summary = paper.account_summary(aid)
-    trades = summary["open_positions"] if status == "open" else (
-        summary["closed_trades"] if status == "closed" else summary["open_positions"] + summary["closed_trades"]
-    )
-    return {"count": len(trades), "trades": trades}
-
-
-@router.post("/paper/trades/{trade_id}/close")
-def close_paper_trade(trade_id: int, reason: str = "manual") -> dict:
-    try:
-        return {"closed": True, "trade": paper.close_trade(trade_id, reason), "simulated": True}
-    except ValueError as exc:
-        raise HTTPException(status_code=400, detail=str(exc)) from exc
-
-
-@router.post("/paper/monitor")
-def monitor() -> dict:
-    return paper.monitor_open_trades()
-
-
-# --------------------------------------------------------------- alerts ---
 
 
 class AlertRuleRequest(BaseModel):
