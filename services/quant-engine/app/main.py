@@ -10,6 +10,7 @@ from .api import (
     intelligence,
     macro,
     market_data,
+    missed_ep,
     news_events_ep,
     performance,
     quant_stats,
@@ -39,6 +40,7 @@ app.include_router(performance.router)
 app.include_router(confluence_ep.router)
 app.include_router(signals.router)
 app.include_router(intelligence.router)
+app.include_router(missed_ep.router)
 app.include_router(news_events_ep.router)
 app.include_router(backtests.router)
 app.include_router(dataquality_ep.router)

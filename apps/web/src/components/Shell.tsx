@@ -23,6 +23,7 @@ const NAV: { group: string; items: { href: string; label: string; icon: ReactNod
       { href: "/strategies", label: "Strategy Analysis", icon: <IconTarget /> },
       { href: "/performance", label: "Performance", icon: <IconPulse /> },
       { href: "/confluence", label: "Confluence", icon: <IconTarget /> },
+      { href: "/signals", label: "Signal Log", icon: <IconZap /> },
       { href: "/setups", label: "Trade Ideas", icon: <IconZap /> },
     ],
   },
