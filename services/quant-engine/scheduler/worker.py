@@ -33,6 +33,7 @@ logging.basicConfig(
     format="%(asctime)s %(levelname)s %(name)s: %(message)s",
 )
 logger = logging.getLogger("scheduler")
+_last_brief_date = None
 logging.getLogger("httpx").setLevel(logging.WARNING)
 
 MACRO_INTERVAL = int(os.environ.get("MACRO_INTERVAL_SECONDS", str(6 * 3600)))
@@ -40,6 +41,7 @@ CALENDAR_INTERVAL = int(os.environ.get("CALENDAR_INTERVAL_SECONDS", str(12 * 360
 CFTC_INTERVAL = int(os.environ.get("CFTC_INTERVAL_SECONDS", str(12 * 3600)))
 NEWS_INTERVAL = int(os.environ.get("NEWS_INTERVAL_SECONDS", "1800"))
 ANALYSIS_INTERVAL = int(os.environ.get("ANALYSIS_INTERVAL_SECONDS", str(12 * 3600)))
+DAILY_BRIEF_HOUR_NOTE = "brief fires once per day at 08:00 IST"
 VERDICT_INTERVAL = int(os.environ.get("VERDICT_INTERVAL_SECONDS", str(6 * 3600)))
 STRATEGY_VERDICT_INTERVAL = int(os.environ.get("STRATEGY_VERDICT_INTERVAL_SECONDS", str(15 * 60)))
 SIGNAL_INTERVAL = int(os.environ.get("SIGNAL_INTERVAL_SECONDS", str(15 * 60)))
@@ -166,6 +168,22 @@ def sync_signals() -> None:
         logger.warning("signal generation failed: %s", exc)
 
 
+def sync_daily_brief() -> None:
+    """Send the morning Gold Brief (deterministic, no LLM) — once per day."""
+    import datetime as _dt
+
+    from app import briefs
+
+    global _last_brief_date
+    if briefs.due_for_brief(_last_brief_date):
+        ok, err = briefs.send_daily_brief("XAUUSD")
+        if ok:
+            _last_brief_date = _dt.datetime.now(_dt.UTC).date()
+            logger.info("daily brief sent")
+        else:
+            logger.warning("daily brief not sent: %s", err)
+
+
 def sync_alerts_and_setups() -> None:
     """Alert evaluation + setup evaluation (cheap, local)."""
     from app import alerts
@@ -241,6 +259,7 @@ def run() -> None:
             if now - last.get("alerts", 0) >= ALERTS_INTERVAL:
                 sync_alerts_and_setups()
                 last["alerts"] = now
+            sync_daily_brief()
         except Exception:
             logger.exception("scheduler cycle failed")
 

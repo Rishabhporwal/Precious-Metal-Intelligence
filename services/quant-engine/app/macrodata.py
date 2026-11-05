@@ -41,7 +41,8 @@ def insert_economic_events(events: list[dict]) -> int:
                 INSERT INTO economic_events
                     (source, release_name, series_id, event_date, actual_value, units)
                 VALUES (%s, %s, %s, %s, %s, %s)
-                ON CONFLICT (source, release_name, series_id, event_date) DO NOTHING
+                ON CONFLICT (source, release_name, coalesce(series_id, ''), event_date)
+                DO UPDATE SET actual_value = EXCLUDED.actual_value, units = EXCLUDED.units
                 """,
                 (e["source"], e["release_name"], e.get("series_id"),
                  _to_date(e["event_date"]), e.get("actual_value"), e.get("units")),
