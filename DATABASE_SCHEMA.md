@@ -27,7 +27,7 @@ NUMERIC/DECIMAL. Schema evolves exclusively through Alembic migrations in
 `technical_indicators`, `market_structure_events`, `strategy_detections`,
 `market_analyses`, `analysis_evidence`, `trade_setups`, `trade_outcomes`,
 `alert_rules`, `alert_events`, `backtest_runs`, `backtest_trades`,
-`paper_accounts`, `paper_trades`, `paper_trade_fills`.
+*(paper trading removed 2026-11-06 — tables dropped in migration 0017)*
 
 ## Standing design rules
 
