@@ -43,6 +43,7 @@ NEWS_INTERVAL = int(os.environ.get("NEWS_INTERVAL_SECONDS", "1800"))
 ANALYSIS_INTERVAL = int(os.environ.get("ANALYSIS_INTERVAL_SECONDS", str(12 * 3600)))
 DAILY_BRIEF_HOUR_NOTE = "brief fires once per day at 08:00 IST"
 VERDICT_INTERVAL = int(os.environ.get("VERDICT_INTERVAL_SECONDS", str(6 * 3600)))
+ALERTS_INTERVAL = int(os.environ.get("ALERTS_INTERVAL_SECONDS", "120"))
 STRATEGY_VERDICT_INTERVAL = int(os.environ.get("STRATEGY_VERDICT_INTERVAL_SECONDS", str(15 * 60)))
 SIGNAL_INTERVAL = int(os.environ.get("SIGNAL_INTERVAL_SECONDS", str(15 * 60)))
 
