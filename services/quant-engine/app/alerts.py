@@ -23,6 +23,10 @@ def list_rules() -> list[dict]:
 
 def create_rule(kind: str, symbol: str, params: dict, severity: str = "info",
                 cooldown_seconds: int = 3600) -> dict:
+    if kind in ("price_above", "price_below"):
+        level = (params or {}).get("level")
+        if level is None or float(level) <= 0:
+            raise ValueError("price alerts require a positive level")
     with get_pool().connection() as conn:
         cur = conn.execute(
             """
@@ -108,8 +112,15 @@ def evaluate_price_rules() -> int:
             hit = (rule["kind"] == "price_above" and price >= level) or (
                 rule["kind"] == "price_below" and price <= level
             )
-            if hit and fire(rule, f"XAUUSD {'≥' if rule['kind'] == 'price_above' else '≤'} {label}: now {price:.2f}"):
-                fired += 1
+            # fire on false→true TRANSITION only; a continuously-true condition
+            # must not repeat (cooldown alone would re-fire it forever)
+            if hit and rule.get("last_state") is not True:
+                if fire(rule, f"XAUUSD {'≥' if rule['kind'] == 'price_above' else '≤'} {label}: now {price:.2f}"):
+                    fired += 1
+            if hit != bool(rule.get("last_state")):
+                conn.execute(
+                    "UPDATE alert_rules SET last_state = %s WHERE id = %s", (hit, rule["id"])
+                )
     return fired
 
 

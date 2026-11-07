@@ -57,7 +57,12 @@ export function AlertsView() {
   }, [load]);
 
   const create = async () => {
-    const params = form.level ? { level: Number(form.level) } : {};
+    const lvl = Number(form.level);
+    if (!form.level || !Number.isFinite(lvl) || lvl <= 0) {
+      alert("Enter a positive price level for the alert.");
+      return;
+    }
+    const params = { level: lvl };
     await fetch(`${API_URL}/api/v1/alerts`, {
       method: "POST",
       headers: { "content-type": "application/json" },
