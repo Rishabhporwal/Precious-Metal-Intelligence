@@ -51,7 +51,30 @@ async def close_llm_cache() -> None:
     pass  # redis client is cached per-process; connections reap on shutdown
 
 
-async def chat(messages: list[dict], cfg: LLMConfig | None = None, max_tokens: int = 1200) -> dict:
+def cache_key_for(messages: list[dict], cfg: LLMConfig | None = None) -> str:
+    """The exact cache key chat() uses — lets callers invalidate poisoned entries."""
+    cfg = cfg or LLMConfig()
+    return "llm:" + hashlib.sha256(
+        (cfg.model + "|" + cfg.prompt_version + "|" + json.dumps(messages, sort_keys=True)).encode()
+    ).hexdigest()
+
+
+async def invalidate_cache(messages: list[dict], cfg: LLMConfig | None = None) -> None:
+    cfg = cfg or LLMConfig()
+    try:
+        redis = _redis(cfg.redis_url)
+        await redis.delete(cache_key_for(messages, cfg))
+    except Exception:  # noqa: BLE001
+        pass
+
+
+async def _chat_once(messages: list[dict], cfg: LLMConfig, max_tokens: int) -> dict:
+    """Single chat completion with Redis cache. Returns {content, model, usage, cache_hit}.
+
+    validate: optional callable(result) -> str|None — return a reason string to reject
+    the response (cached or fresh); the cache entry is deleted and the call retried live.
+    Guards against poisoned entries like valid-JSON-but-empty '[]'.
+    """
     """Single chat completion with Redis cache. Returns {content, model, usage, cache_hit}."""
     cfg = cfg or LLMConfig()
     if not cfg.configured:
@@ -147,3 +170,30 @@ async def chat(messages: list[dict], cfg: LLMConfig | None = None, max_tokens: i
         logger.warning("LLM cache write failed: %s", exc)
     logger.info("LLM cache MISS (%s), usage=%s", cfg.model, payload.get("usage"))
     return payload
+
+
+async def chat(messages: list[dict], cfg: LLMConfig | None = None, max_tokens: int = 1200,
+               validate=None) -> dict:
+    """chat() with poisoned-response rejection: if validate() rejects, the cache
+    entry is deleted and the call retried live (once)."""
+    cfg = cfg or LLMConfig()
+    result = await _chat_once(messages, cfg, max_tokens)
+    if validate is None:
+        return result
+    reason = None
+    try:
+        reason = validate(result)
+    except Exception:  # noqa: BLE001 — a broken validator must not break the call
+        reason = None
+    if reason:
+        logger.warning("LLM response rejected (%s) — invalidating cache, retrying live", reason)
+        await invalidate_cache(messages, cfg)
+        result = await _chat_once(messages, cfg, max_tokens)
+        r2 = None
+        try:
+            r2 = validate(result)
+        except Exception:  # noqa: BLE001
+            r2 = None
+        if r2:
+            raise RuntimeError(f"LLM response invalid after retry: {r2}")
+    return result

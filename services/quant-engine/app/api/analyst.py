@@ -125,15 +125,28 @@ async def classify_news(limit: int = 30) -> dict:
             "content": (
                 "You classify gold-market news headlines. For each item output a sentiment "
                 "'bullish'|'bearish'|'neutral' for GOLD (XAU/USD) and affected instruments. "
-                "Be conservative: only label sentiment when the headline clearly implies it. "
+                "If the headline has no clear implication for gold, label it 'neutral' — every "
+                "input item MUST get exactly one output object with its matching index i. "
                 "Output STRICT JSON: [{\"i\": <int>, \"sentiment\": \"...\", \"instruments\": [\"XAUUSD\"], \"reason\": \"<short>\"}]. "
                 "No prose outside JSON. Never invent facts beyond the headline text."
             ),
         },
         {"role": "user", "content": __import__("json").dumps(payload)},
     ]
+    def _validate(result: dict) -> str | None:
+        text = (result.get("content") or "").strip()
+        text = re.sub(r"^```(?:json)?\s*", "", text)
+        text = re.sub(r"```\s*$", "", text)
+        try:
+            items = json.loads(text)
+        except json.JSONDecodeError as exc:
+            return f"invalid JSON: {exc}"
+        if not isinstance(items, list) or not items:
+            return "classifier returned no items (empty JSON array)"
+        return None
+
     try:
-        result = await chat(messages, cfg=cfg, max_tokens=1500)
+        result = await chat(messages, cfg=cfg, max_tokens=1500, validate=_validate)
     except Exception as exc:
         raise HTTPException(status_code=502, detail=f"LLM classification failed: {exc}") from exc
 
