@@ -17,6 +17,7 @@ from __future__ import annotations
 
 from datetime import UTC, datetime, timedelta
 
+from app.dataquality import freshness_flags
 from indicators.oscillators import atr
 from indicators.structure import full_structure_report
 
@@ -190,6 +191,12 @@ def build_verdict(
     if quote_price is None:
         return {"error": "no live quote — cannot compute a verdict without current price"}
 
+    # STALENESS GUARD: never present levels computed from stale candles confidently.
+    fresh = freshness_flags(hourly=hourly, daily=daily)
+    stale_note: str | None = None
+    if fresh["stale"]:
+        stale_note = "STALE INPUT DATA — " + ", ".join(fresh["stale"]) + "; levels may be outdated"
+
     closes = [float(r["close"]) for r in daily]
     highs = [float(r["high"]) for r in daily]
     lows = [float(r["low"]) for r in daily]
@@ -247,6 +254,9 @@ def build_verdict(
         )
     invalidations.append("If the trend flips against this call, the verdict is stale — refresh before acting.")
 
+    if stale_note:
+        confidence = "low"
+        invalidations = list(invalidations) + [stale_note]
     return {
         "symbol": symbol,
         "as_of": now.isoformat(),
@@ -254,6 +264,7 @@ def build_verdict(
         "direction": direction,
         "confidence": confidence,
         "score": score,
+        "data_quality": {"stale": fresh["stale"], "ok": not fresh["stale"]},
         "drivers": drivers,
         "trend_daily": trend_daily,
         "trend_hourly": trend_hourly,

@@ -55,7 +55,7 @@ FAMILY_OF: dict[str, str] = {}
 def _family(sid: str) -> str:
     if sid.startswith("mom_"):
         return "momentum"
-    if sid.startswith(("smc_", "ict_")) or sid.startswith("price_action_"):
+    if sid.startswith(("smc_", "ict_", "price_action_")):
         return "smc"
     if sid.startswith("wyckoff_"):
         return "wyckoff"
@@ -143,7 +143,7 @@ def decide(
     # (two momentum strategies = one momentum family, not two confirmations — §2.2)
     dominant = bull if score > 0 else bear
     families_agreeing = len({_family(v["strategy_id"]) for v in dominant})
-    groups_agreeing = len({group_of.get(v["strategy_id"], "other:" + v["strategy_id"]) for v in dominant})
+    len({group_of.get(v["strategy_id"], "other:" + v["strategy_id"]) for v in dominant})
     momentum_leading = any(v["strategy_id"] in MOMENTUM_IDS for v in dominant)
 
     # regime confirmation
@@ -178,7 +178,6 @@ def decide(
         return st
 
     abs_score = abs(score)
-    direction = "bull" if score > 0 else "bear"
 
     if abs_score >= 3.2 and families_agreeing >= 2 and regime_confirms:
         st = _signal("STRONG_BUY" if score > 0 else "STRONG_SELL", score, regime_name, verdicts,

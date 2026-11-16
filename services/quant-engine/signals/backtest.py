@@ -18,6 +18,7 @@ Honest scope (labeled in every result):
 from __future__ import annotations
 
 import json
+import logging
 from datetime import UTC, datetime, timedelta
 
 from app.db import get_pool
@@ -27,6 +28,8 @@ from signals.engine import decide
 from strategies import verdicts as sv
 from strategies.base import build_context
 from strategies.registry import REGISTRY
+
+logger = logging.getLogger("backtest")
 
 SPREAD = 0.4          # XAUUSD typical spread, $/oz
 STOP_ATR_MULT = 1.5
@@ -133,7 +136,8 @@ def run_signal_backtest(symbol: str, interval: str = "1h", days: int = 30, step_
         for sid, cls in REGISTRY.items():
             try:
                 dets = cls().detect(ctx)
-            except Exception:  # noqa: BLE001 — mirror live behaviour
+            except Exception as exc:  # noqa: BLE001 — mirror live behaviour
+                logger.debug("strategy failed in backtest: %s", exc)
                 continue
             dlist = [
                 {"direction": d.direction, "anchor_time": d.anchor_time, "status": d.status}

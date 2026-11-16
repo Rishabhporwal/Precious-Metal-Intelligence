@@ -131,6 +131,27 @@ def ingest_candles(
     return written
 
 
+def _log_staleness(instruments: list[dict]) -> None:
+    """ERROR loudly if any series is beyond its staleness threshold — silent
+    staleness is how week-old levels end up on the UI looking current."""
+    from app.dataquality import _staleness_threshold, data_age_hours
+    from providers.base import CandleInterval
+
+    for instrument in instruments:
+        for interval in (CandleInterval.MIN_1, CandleInterval.HOUR_1, CandleInterval.DAY_1):
+            age = data_age_hours(instrument["symbol"], interval)
+            if age is None:
+                logger.error("STALE DATA: %s %s has no candles at all", instrument["symbol"], interval.value)
+                continue
+            threshold = _staleness_threshold(interval) * 3 if interval is CandleInterval.MIN_1 else _staleness_threshold(interval)
+            if age > threshold:
+                logger.error(
+                    "STALE DATA: %s %s newest candle is %.1fh old (threshold %.0fh) — "
+                    "verdict levels computed from this will be wrong",
+                    instrument["symbol"], interval.value, age, threshold,
+                )
+
+
 def run() -> None:
     logger.info("ingestion worker starting")
     stop = False
@@ -210,6 +231,7 @@ def run() -> None:
                 last_hourly_poll = time.monotonic()
             if do_daily:
                 last_daily_poll = time.monotonic()
+                _log_staleness(instruments)
         else:
             logger.info("no enabled instruments yet — idling")
         # sleep until next quote poll, remaining responsive to shutdown

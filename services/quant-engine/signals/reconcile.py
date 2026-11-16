@@ -116,7 +116,7 @@ def build_reconciliation(
 def _family(sid: str) -> str:
     if sid.startswith("mom_"):
         return "momentum"
-    if sid.startswith(("smc_", "ict_")) or sid.startswith("price_action_"):
+    if sid.startswith(("smc_", "ict_", "price_action_")):
         return "smc"
     if sid.startswith("wyckoff_"):
         return "wyckoff"

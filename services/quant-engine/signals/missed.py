@@ -71,7 +71,7 @@ def scan_missed(symbol: str, interval: str, lookback_days: int = 30) -> dict:
     # major moves: |forward 24h return| ≥ threshold, deduped by stride
     moves: list[tuple[datetime, float, str]] = []  # (bar time, fwd return %, direction)
     last_recorded: datetime | None = None
-    closes_by_time = dict(rows)
+    dict(rows)
     for ts, close in rows:
         if ts < cutoff or ts > now - timedelta(hours=LOOKBACK_HOURS):
             continue

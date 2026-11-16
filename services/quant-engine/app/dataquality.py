@@ -25,6 +25,48 @@ EXPECTED_SPACING_MIN = {
 }
 
 
+def data_age_hours(symbol: str, interval: CandleInterval) -> float | None:
+    """Age of the newest candle for one interval, in hours (None if no data)."""
+    with get_pool().connection() as conn:
+        inst = store.get_instrument_by_symbol(conn, symbol.upper())
+        if inst is None:
+            return None
+        rows = store.get_candles(conn, inst["id"], interval, limit=1)
+    if not rows:
+        return None
+    ts = rows[-1]["market_ts"]
+    if ts.tzinfo is None:
+        ts = ts.replace(tzinfo=UTC)
+    return (datetime.now(UTC) - ts).total_seconds() / 3600
+
+
+def freshness_flags(symbol: str = "XAUUSD", hourly: list[dict] | None = None,
+                    daily: list[dict] | None = None) -> dict:
+    """Cheap staleness verdict for the data a generation call is about to use.
+
+    Prefers the actual rows being consumed; falls back to a DB check. Returns
+    {hourly_ok, daily_ok, stale: [...]} — callers must surface stale inputs,
+    never present them confidently.
+    """
+    stale: list[str] = []
+    for name, rows, threshold in (
+        ("hourly", hourly, 8.0),
+        ("daily", daily, 72.0),
+    ):
+        if not rows:
+            stale.append(f"{name}:no_data")
+            continue
+        ts = rows[-1]["market_ts"]
+        if getattr(ts, "tzinfo", None) is None:
+            ts = ts.replace(tzinfo=UTC)
+        age = (datetime.now(UTC) - ts).total_seconds() / 3600
+        if age > threshold:
+            stale.append(f"{name}:{age:.0f}h_old")
+    return {"hourly_ok": not any(s.startswith("hourly") for s in stale),
+            "daily_ok": not any(s.startswith("daily") for s in stale),
+            "stale": stale}
+
+
 def quality_report(symbol: str = "XAUUSD") -> dict:
     symbol = symbol.upper()
     now = datetime.now(UTC)

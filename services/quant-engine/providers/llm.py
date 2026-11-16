@@ -64,8 +64,8 @@ async def invalidate_cache(messages: list[dict], cfg: LLMConfig | None = None) -
     try:
         redis = _redis(cfg.redis_url)
         await redis.delete(cache_key_for(messages, cfg))
-    except Exception:  # noqa: BLE001
-        pass
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("cache invalidate failed: %s", exc)
 
 
 async def _chat_once(messages: list[dict], cfg: LLMConfig, max_tokens: int) -> dict:
@@ -143,8 +143,8 @@ async def _chat_once(messages: list[dict], cfg: LLMConfig, max_tokens: int) -> d
                     try:
                         if resp.json().get("choices", [{}])[0].get("message", {}).get("content"):
                             break  # usable content — accept this model
-                    except Exception:  # noqa: BLE001
-                        pass
+                    except Exception as exc:  # noqa: BLE001
+                        logger.warning("free-model response unparsable: %s", exc)
                     # empty content — rotate to the next free model
     if resp.status_code == 401:
         raise RuntimeError("OpenRouter rejected the API key")
@@ -192,7 +192,8 @@ async def chat(messages: list[dict], cfg: LLMConfig | None = None, max_tokens: i
         r2 = None
         try:
             r2 = validate(result)
-        except Exception:  # noqa: BLE001
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("validator raised on retry: %s", exc)
             r2 = None
         if r2:
             raise RuntimeError(f"LLM response invalid after retry: {r2}")

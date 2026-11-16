@@ -114,9 +114,10 @@ def evaluate_price_rules() -> int:
             )
             # fire on false→true TRANSITION only; a continuously-true condition
             # must not repeat (cooldown alone would re-fire it forever)
-            if hit and rule.get("last_state") is not True:
-                if fire(rule, f"XAUUSD {'≥' if rule['kind'] == 'price_above' else '≤'} {label}: now {price:.2f}"):
-                    fired += 1
+            if hit and rule.get("last_state") is not True and fire(
+                rule, f"XAUUSD {'≥' if rule['kind'] == 'price_above' else '≤'} {label}: now {price:.2f}"
+            ):
+                fired += 1
             if hit != bool(rule.get("last_state")):
                 conn.execute(
                     "UPDATE alert_rules SET last_state = %s WHERE id = %s", (hit, rule["id"])

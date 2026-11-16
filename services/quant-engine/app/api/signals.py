@@ -9,6 +9,7 @@ from fastapi import APIRouter, HTTPException, Query
 
 from ai.verdict import build_verdict
 from app.api.strategy_verdicts import evaluate as evaluate_verdicts
+from app.dataquality import freshness_flags
 from app.db import get_pool
 from app.macrodata import upcoming_events
 from app.marketdata import store
@@ -82,6 +83,14 @@ def generate(symbol: str = Query(default="XAUUSD"), interval: str = Query(defaul
     # transparent cross-market nudge: apply to the verdict score before the decision
     for v in verdicts:
         pass  # verdicts stay untouched — nudge is applied to score, documented in output
+
+    # STALENESS GUARD: a directional signal on stale candles is how accounts die
+    fresh = freshness_flags(hourly=hourly, daily=daily)
+    if fresh["stale"]:
+        raise HTTPException(
+            status_code=503,
+            detail=f"refusing to generate a signal on stale data: {', '.join(fresh['stale'])} — fix ingestion first",
+        )
 
     decision = decide(
         verdicts=verdicts,

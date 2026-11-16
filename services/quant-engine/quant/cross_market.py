@@ -7,6 +7,7 @@ output says so. Correlation is context, never proof of causation.
 
 from __future__ import annotations
 
+import itertools
 from datetime import UTC, datetime, timedelta
 
 from app.db import get_pool
@@ -19,7 +20,7 @@ FACTORS = [
 
 
 def _pct_returns(values: list[float]) -> list[float]:
-    return [(b - a) / a * 100 for a, b in zip(values, values[1:], strict=False)]
+    return [(b - a) / a * 100 for a, b in itertools.pairwise(values)]
 
 
 def _pearson(xs: list[float], ys: list[float]) -> float | None:
