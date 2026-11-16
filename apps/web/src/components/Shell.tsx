@@ -17,7 +17,7 @@ const NAV: { group: string; items: { href: string; label: string; icon: ReactNod
   {
     group: "Strategy intelligence",
     items: [
-      { href: "/strategies", label: "Strategy Analysis", icon: <IconTarget /> },
+      { href: "/strategies", label: "Strategy Lab", icon: <IconTarget /> },
     ],
   },
   {

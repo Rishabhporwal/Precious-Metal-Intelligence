@@ -9,11 +9,13 @@ interface VerdictPlan {
   t1?: number;
   t2?: number;
   risk_per_oz?: number;
+  atr14?: number;
 }
 
 interface Verdict {
   direction: string;
   confidence: string;
+  score?: number;
   as_of: string;
   plan?: VerdictPlan;
   key_levels?: { supports?: number[]; resistances?: number[]; prev_day_low?: number; prev_day_high?: number };
@@ -139,6 +141,22 @@ function whyBullets(verdict: Verdict, signal: Signal | null, news: NewsArticle[]
   return out.slice(0, 4);
 }
 
+// Targets come from the 1-hour chart, so they are SHORT-TERM. Estimate how fast
+// the first goal is typically reached from recent volatility: distance ÷ ATR(1h).
+function horizonLabel(plan: VerdictPlan): string | null {
+  if (plan.t1 == null || plan.atr14 == null || plan.atr14 <= 0) return null;
+  const entry = plan.entry_low != null && plan.entry_high != null
+    ? (plan.entry_low + plan.entry_high) / 2
+    : plan.stop;
+  if (entry == null) return null;
+  const bars = Math.abs(plan.t1 - entry) / plan.atr14;
+  const hours = bars * 1; // signals run on the 1h chart
+  if (hours <= 12) return "intraday — the first goal is often reached within hours";
+  if (hours <= 36) return "short-term — the first goal is often reached within about a day";
+  if (hours <= 96) return "short-term — the first goal is typically 1–3 days away";
+  return "short swing — expect several days for the first goal";
+}
+
 function PlanRow({ label, value, tone }: { label: string; value: string; tone?: string }) {
   return (
     <div className="flex items-baseline justify-between gap-3 border-b border-line-subtle py-2.5 last:border-0">
@@ -186,6 +204,10 @@ export async function TodayPlan() {
         {verdict && (
           <p className="mt-1.5 text-[12.5px] text-muted">
             {confidenceWord(verdict.confidence)}
+            {verdict.score != null && (
+              <> Evidence score: <span className="num font-semibold text-ink">{verdict.score}</span>
+                <span className="text-faint"> (how strongly everything points the same way; 0 = no edge)</span></>
+            )}
             {trade ? ` ${trade}` : ""}
           </p>
         )}
@@ -219,6 +241,12 @@ export async function TodayPlan() {
                 tone="text-up"
               />
             </div>
+            {horizonLabel(plan) && (
+              <p className="mt-2.5 text-[11.5px] leading-relaxed text-muted">
+                <span className="font-semibold text-ink">Time horizon:</span>{" "}
+                {horizonLabel(plan)} (based on how fast gold has been moving lately).
+              </p>
+            )}
           </div>
         ) : (
           <div className="mt-6 rounded-xl border border-line-subtle bg-raised p-4 sm:p-5">

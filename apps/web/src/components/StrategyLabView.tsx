@@ -32,6 +32,9 @@ interface StrategyVerdict {
   invalidation_level: number | null;
   evidence: string[];
   last_detection: string | null;
+  conditions_met?: string[];
+  conditions_missing?: string[];
+  data_quality?: string;
 }
 
 interface Detection {
@@ -418,6 +421,26 @@ export function StrategyLabView() {
                   <span className="text-[11px] text-faint">last signal {ageOf(selVerdict.last_detection)}</span>
                 )}
               </div>
+
+              {selVerdict && (
+                <div className="mt-3 rounded-xl border border-line-subtle bg-raised p-3.5">
+                  <div className="text-[11.5px] text-muted">How confident is this strategy right now?</div>
+                  <div className="mt-1.5 text-[13.5px] font-semibold text-ink">
+                    {selVerdict.signal_status === "CONFIRMED"
+                      ? "CONFIRMED — all its conditions are met on the live chart."
+                      : selVerdict.signal_status === "WAITING"
+                        ? `Waiting — ${selVerdict.conditions_met?.length ?? 0} of ${(selVerdict.conditions_met?.length ?? 0) + (selVerdict.conditions_missing?.length ?? 0)} conditions met so far.`
+                        : "No active signal — it is watching but not confident enough to call anything."}
+                  </div>
+                  <div className="mt-1 text-[11.5px] text-muted">
+                    {selVerdict.data_quality === "FRESH"
+                      ? "Running on live, up-to-date price data."
+                      : selVerdict.data_quality
+                        ? `Data quality: ${selVerdict.data_quality.toLowerCase()} — treat with care.`
+                        : ""}
+                  </div>
+                </div>
+              )}
 
               {selVerdict && (
                 <div className="mt-3 grid gap-3 sm:grid-cols-2">
