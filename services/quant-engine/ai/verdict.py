@@ -80,12 +80,15 @@ def _direction_score(
             "vote": v,
         })
 
-    if news_net is not None and abs(news_net) >= 1:
+    # news_net is driver-weighted and clipped to ±0.5 — any non-zero weighted
+    # lean earns the news vote. (The old `abs() >= 1` gate was written for the
+    # integer pre-driver scale and made this component permanently dead.)
+    if news_net and news_net != 0:
         v = W_NEWS if news_net > 0 else -W_NEWS
         score += v
         drivers.append({
             "source": "news",
-            "label": f"News sentiment net {news_net:+d}",
+            "label": f"News sentiment net {news_net:+.2f} (driver-weighted)",
             "plain": f"Recent headlines lean {'positive' if news_net > 0 else 'negative'} for gold.",
             "vote": v,
         })
