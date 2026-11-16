@@ -12,10 +12,19 @@ interface VerdictPlan {
   atr14?: number;
 }
 
+interface EvidenceSplit {
+  bullish_points?: number;
+  bearish_points?: number;
+  bullish_pct?: number | null;
+  bearish_pct?: number | null;
+  components?: { label: string; points: number; direction: string }[];
+}
+
 interface Verdict {
   direction: string;
   confidence: string;
   score?: number;
+  evidence_split?: EvidenceSplit;
   as_of: string;
   plan?: VerdictPlan;
   key_levels?: { supports?: number[]; resistances?: number[]; prev_day_low?: number; prev_day_high?: number };
@@ -204,10 +213,6 @@ export async function TodayPlan() {
         {verdict && (
           <p className="mt-1.5 text-[12.5px] text-muted">
             {confidenceWord(verdict.confidence)}
-            {verdict.score != null && (
-              <> Evidence score: <span className="num font-semibold text-ink">{verdict.score}</span>
-                <span className="text-faint"> (how strongly everything points the same way; 0 = no edge)</span></>
-            )}
             {trade ? ` ${trade}` : ""}
           </p>
         )}
@@ -286,8 +291,47 @@ export async function TodayPlan() {
         {/* WHY — plain English, expandable */}
         <details className="mt-5 rounded-xl border border-line-subtle bg-raised p-4">
           <summary className="cursor-pointer text-[13px] font-semibold text-gold">
-            Why? See the reasons
+            Why? See the reasons and the confidence breakdown
           </summary>
+          {verdict?.evidence_split && verdict.evidence_split.bullish_pct != null && (
+            <div className="mt-3">
+              <div className="text-[12px] text-muted">
+                Of the weighted evidence that voted,{" "}
+                <span className={`num font-bold ${verdict.evidence_split.bearish_pct! > verdict.evidence_split.bullish_pct! ? "text-down" : "text-up"}`}>
+                  {verdict.evidence_split.bearish_pct! >= verdict.evidence_split.bullish_pct! ? verdict.evidence_split.bearish_pct : verdict.evidence_split.bullish_pct}%
+                </span>{" "}
+                points {verdict.evidence_split.bearish_pct! >= verdict.evidence_split.bullish_pct! ? "bearish (fall)" : "bullish (rise)"}:
+              </div>
+              <div className="mt-2 flex h-2.5 w-full overflow-hidden rounded-full bg-line-subtle">
+                <div
+                  className="h-full bg-[var(--up,#10b981)]"
+                  style={{ width: `${verdict.evidence_split.bullish_pct ?? 0}%` }}
+                />
+                <div
+                  className="h-full bg-[var(--down,#f6465d)]"
+                  style={{ width: `${verdict.evidence_split.bearish_pct ?? 0}%` }}
+                />
+              </div>
+              <div className="mt-2 space-y-1">
+                {(verdict.evidence_split.components ?? []).map((c, i) => (
+                  <div key={i} className="flex items-baseline justify-between gap-3 text-[11.5px]">
+                    <span className="text-muted">{c.label}</span>
+                    <span
+                      className={`num font-semibold ${
+                        c.direction === "bullish" ? "text-up" : c.direction === "bearish" ? "text-down" : "text-faint"
+                      }`}
+                    >
+                      {c.points > 0 ? "+" : ""}{c.points.toFixed(1)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+              <p className="mt-2 text-[10px] leading-relaxed text-faint">
+                Percent = share of weighted evidence (vote-share), not a probability of success.
+                Each point: daily trend ±2.0, hourly ±1.0, pattern signals ±1.0, news ±0.5.
+              </p>
+            </div>
+          )}
           <ul className="mt-3 space-y-2">
             {why.map((w, i) => (
               <li key={i} className="flex gap-2 text-[12.5px] leading-relaxed text-muted">

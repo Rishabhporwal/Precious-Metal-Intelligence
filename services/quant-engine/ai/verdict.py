@@ -89,7 +89,23 @@ def _direction_score(
             "plain": f"Recent headlines lean {'positive' if news_net > 0 else 'negative'} for gold.",
             "vote": v,
         })
-    return round(score, 2), drivers
+    # evidence split: of the weighted evidence that actually voted (non-zero),
+    # what share points bullish vs bearish. Honest: a vote-share, not a probability.
+    bull_votes = sum(d["vote"] for d in drivers if d["vote"] > 0)
+    bear_votes = -sum(d["vote"] for d in drivers if d["vote"] < 0)
+    total_votes = bull_votes + bear_votes
+    evidence_split = {
+        "bullish_points": round(bull_votes, 2),
+        "bearish_points": round(bear_votes, 2),
+        "bullish_pct": round(100 * bull_votes / total_votes) if total_votes else None,
+        "bearish_pct": round(100 * bear_votes / total_votes) if total_votes else None,
+        "components": [
+            {"label": d["label"], "points": d["vote"],
+             "direction": "bullish" if d["vote"] > 0 else "bearish" if d["vote"] < 0 else "neutral"}
+            for d in drivers
+        ],
+    }
+    return round(score, 2), drivers, evidence_split
 
 
 def _confidence(score: float, n_drivers: int, veto: bool) -> str:
@@ -218,7 +234,7 @@ def build_verdict(
         if e20 and e50:
             trend_hourly = "up" if e20 > e50 * 1.0005 else "down" if e20 < e50 * 0.9995 else "sideways"
 
-    score, drivers = _direction_score(trend_daily, trend_hourly, strategy_bias, news_net)
+    score, drivers, evidence_split = _direction_score(trend_daily, trend_hourly, strategy_bias, news_net)
 
     veto, veto_events = event_veto(events, now)
 
@@ -264,6 +280,7 @@ def build_verdict(
         "direction": direction,
         "confidence": confidence,
         "score": score,
+        "evidence_split": evidence_split,
         "data_quality": {"stale": fresh["stale"], "ok": not fresh["stale"]},
         "drivers": drivers,
         "trend_daily": trend_daily,
