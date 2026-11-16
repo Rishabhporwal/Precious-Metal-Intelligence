@@ -162,9 +162,13 @@ def run() -> None:
 
     last_candle_poll = 0.0
     last_hourly_poll = 0.0
+    last_daily_poll = 0.0  # refresh immediately on first loop pass
     # Credit budget (free plan 800/day, gold only): quotes 288 + 1min 96 +
-    # hourly refresh 48 ≈ 432/day — leaves ~45% headroom.
+    # hourly refresh 48 + daily refresh 4 ≈ 436/day — leaves ~45% headroom.
     HOURLY_POLL_SECONDS = int(os.environ.get("HOURLY_POLL_SECONDS", "1800"))
+    # Daily candles MUST refresh on a schedule, not only at startup — the verdict
+    # engine's prev-day levels go stale otherwise (found: dailies frozen 5 days).
+    DAILY_POLL_SECONDS = int(os.environ.get("DAILY_POLL_SECONDS", str(6 * 3600)))
     while not stop:
         cycle_start = time.monotonic()
         instruments = enabled_instruments()  # re-read: verify flow may enable new ones
@@ -173,6 +177,7 @@ def run() -> None:
             now_wall = time.monotonic()
             do_min = now_wall - last_candle_poll >= MIN_CANDLE_POLL_SECONDS
             do_hour = now_wall - last_hourly_poll >= HOURLY_POLL_SECONDS
+            do_daily = now_wall - last_daily_poll >= DAILY_POLL_SECONDS
             for instrument in instruments:
                 if stop:
                     break
@@ -191,10 +196,20 @@ def run() -> None:
                         outputsize=30,
                         start=datetime.now(UTC) - timedelta(hours=36),
                     )
+                if do_daily:
+                    # Keep the daily series live — verdict prev-day/S/R levels are
+                    # computed from it. Small window; 1 credit per 6h.
+                    ingest_candles(
+                        provider, instrument, provider_id, CandleInterval.DAY_1,
+                        outputsize=30,
+                        start=datetime.now(UTC) - timedelta(days=45),
+                    )
             if do_min:
                 last_candle_poll = time.monotonic()
             if do_hour:
                 last_hourly_poll = time.monotonic()
+            if do_daily:
+                last_daily_poll = time.monotonic()
         else:
             logger.info("no enabled instruments yet — idling")
         # sleep until next quote poll, remaining responsive to shutdown
