@@ -5,16 +5,16 @@ import { TodayPlan, TodayPlanSkeleton } from "@/components/TodayPlan";
 function QuickActions() {
   const actions = [
     {
-      href: "/alerts",
-      title: "Get notified",
-      detail: "Ping me when gold crosses a price I care about.",
-      emoji: "🔔",
+      href: "/strategies",
+      title: "See the strategies",
+      detail: "Every pattern the engine watches — its signals, right on the chart.",
+      emoji: "📈",
     },
     {
-      href: "/signals",
-      title: "Our track record",
-      detail: "Did our past calls turn out right? See the outcomes.",
-      emoji: "🎯",
+      href: "/news",
+      title: "World news",
+      detail: "What's happening around the world that moves gold.",
+      emoji: "🌍",
     },
     {
       href: "/learn",
