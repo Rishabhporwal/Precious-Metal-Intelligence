@@ -13,8 +13,8 @@ from datetime import UTC, datetime, timedelta, timezone
 from app.db import get_pool
 from providers.telegram import send_message
 
-IST = timezone(timedelta(hours=5, minutes=30))
-BRIEF_HOUR_IST = 8
+UAE = timezone(timedelta(hours=4))
+BRIEF_HOUR_UAE = 8
 
 
 def compose_brief(symbol: str = "XAUUSD") -> str | None:
@@ -116,9 +116,9 @@ def send_daily_brief(symbol: str = "XAUUSD") -> tuple[bool, str | None]:
     text = compose_brief(symbol)
     if text is None:
         return False, "nothing to send (no data)"
-    return send_message(f"☀️ Gold Brief — {datetime.now(IST):%a %d %b}\n\n{text}")
+    return send_message(f"☀️ Aurex Gold Brief — {datetime.now(UAE):%a %d %b}\n\n{text}")
 
 
 def due_for_brief(last_sent_date) -> bool:
-    now = datetime.now(IST)
-    return now.hour >= BRIEF_HOUR_IST and (last_sent_date is None or last_sent_date != now.date())
+    now = datetime.now(UAE)
+    return now.hour >= BRIEF_HOUR_UAE and (last_sent_date is None or last_sent_date != now.date())

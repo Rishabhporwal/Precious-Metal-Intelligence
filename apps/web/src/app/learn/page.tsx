@@ -1,4 +1,4 @@
-export const metadata = { title: "Learn — PMI" };
+export const metadata = { title: "Learn — Aurex" };
 
 const TERMS: { term: string; plain: string; deeper: string }[] = [
   {

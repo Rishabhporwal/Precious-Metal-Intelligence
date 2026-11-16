@@ -1,4 +1,5 @@
 import { LiveTicker } from "@/components/LiveTicker";
+import { fmtUaeDate, fmtUaeTime } from "@/lib/time";
 
 const API_INTERNAL_URL = process.env.API_INTERNAL_URL ?? "http://localhost:8000";
 
@@ -197,8 +198,11 @@ export async function TodayPlan() {
         {/* THE HEADLINE */}
         <div className="flex flex-wrap items-center gap-2">
           <span className="pill">Today&apos;s call</span>
+          <span className="text-[11px] font-medium text-muted">
+            {fmtUaeDate()} · UAE time
+          </span>
           <span className="text-[11px] text-faint">
-            {verdict?.as_of ? `updated ${verdict.as_of.slice(11, 16)} UTC` : ""}
+            {verdict?.as_of ? `updated ${fmtUaeTime(verdict.as_of)} UAE` : ""}
           </span>
           {price != null && (
             <span className="ml-auto num text-[13px] font-semibold text-ink">

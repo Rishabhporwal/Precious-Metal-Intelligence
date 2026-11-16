@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { fmtUaeDateTime } from "@/lib/time";
 import {
   CandlestickSeries,
   LineSeries,
@@ -491,7 +492,7 @@ export function StrategyLabView() {
                                 {d.direction === "bullish" ? "Buy" : "Sell"} signal
                               </span>
                               <span className="text-[10.5px] text-faint">
-                                {d.anchor_time.slice(5, 16).replace("T", " ")} UTC
+                                {fmtUaeDateTime(d.anchor_time)} UAE
                               </span>
                             </div>
                             {d.evidence.slice(0, 2).map((e, j) => (

@@ -1,4 +1,5 @@
 "use client";
+import { fmtUaeDateTime } from "@/lib/time";
 
 import { useEffect, useRef, useState } from "react";
 
@@ -119,7 +120,7 @@ export function LiveTicker() {
       <div className="relative flex items-center gap-3 px-6 pb-5 pt-2">
         {quote?.marketTs && (
           <span className="num text-[11px] text-faint">
-            mkt {new Date(quote.marketTs).toISOString().slice(5, 16)}Z
+            mkt {fmtUaeDateTime(quote.marketTs)} UAE
           </span>
         )}
         <span className="text-[10.5px] text-faint">

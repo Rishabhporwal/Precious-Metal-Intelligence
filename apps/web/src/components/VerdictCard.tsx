@@ -1,4 +1,5 @@
 import { VerdictRefresh } from "@/components/VerdictRefresh";
+import { fmtUaeDateTime } from "@/lib/time";
 
 const API_INTERNAL_URL = process.env.API_INTERNAL_URL ?? "http://localhost:8000";
 
@@ -72,7 +73,7 @@ export async function VerdictCard() {
       <div className="flex items-center justify-between">
         <span className="pill pill-gold">Today's Verdict</span>
         <span className="text-[11px] text-faint">
-          {new Date(v.as_of).toISOString().slice(5, 16).replace("T", " ")} UTC
+          {fmtUaeDateTime(v.as_of)} UAE
         </span>
       </div>
 

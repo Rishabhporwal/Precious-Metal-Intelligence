@@ -1,4 +1,5 @@
 "use client";
+import { fmtUaeDateTime } from "@/lib/time";
 
 import { useCallback, useEffect, useState } from "react";
 
@@ -65,7 +66,7 @@ export function NewsEventsView() {
             {e.importance === "high" && <span className="pill pill-gold">high importance</span>}
             <span className="num ml-auto text-[10px] text-faint">
               {e.sources_count} source{e.sources_count === 1 ? "" : "s"} · updated{" "}
-              {e.last_update ? new Date(e.last_update).toISOString().slice(5, 16).replace("T", " ") : "—"} UTC
+              {e.last_update ? fmtUaeDateTime(e.last_update) : "—"} UAE
             </span>
           </div>
           <div className="mt-2.5 text-[14px] font-semibold text-ink">{e.title}</div>
@@ -80,7 +81,7 @@ export function NewsEventsView() {
                   {a.published_at && (
                     <span className="num text-[10px] text-faint">
                       {" "}
-                      · {new Date(a.published_at).toISOString().slice(5, 16).replace("T", " ")}Z
+                      · {fmtUaeDateTime(a.published_at)} UAE
                     </span>
                   )}
                 </li>

@@ -58,8 +58,8 @@ def insert_news(articles: list[dict]) -> int:
             cur = conn.execute(
                 """
                 INSERT INTO news_articles
-                    (source, url, title, summary, published_at, classified)
-                VALUES (%s, %s, %s, %s, %s, false)
+                    (source, url, title, summary, published_at, classified, driver)
+                VALUES (%s, %s, %s, %s, %s, false, NULL)
                 ON CONFLICT (url) DO NOTHING
                 """,
                 (a["source"], a["url"], a["title"], a.get("summary"), a.get("published_at")),

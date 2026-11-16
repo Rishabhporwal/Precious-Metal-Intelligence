@@ -127,7 +127,12 @@ async def classify_news(limit: int = 30) -> dict:
                 "'bullish'|'bearish'|'neutral' for GOLD (XAU/USD) and affected instruments. "
                 "If the headline has no clear implication for gold, label it 'neutral' — every "
                 "input item MUST get exactly one output object with its matching index i. "
-                "Output STRICT JSON: [{\"i\": <int>, \"sentiment\": \"...\", \"instruments\": [\"XAUUSD\"], \"reason\": \"<short>\"}]. "
+                "For each item also tag the PRIMARY driver: 'rates' (Fed/interest rates/yields), "
+                "'usd' (dollar strength/weakness), 'geopolitics' (war/conflict/sanctions/safe-haven), "
+                "'physical' (demand/supply/ETF/central-bank buying/mine supply), 'positioning' "
+                "(CFTC/futures flows), 'market' (broad equities/risk mood), or 'other'. "
+                "Output STRICT JSON: [{\"i\": <int>, \"sentiment\": \"...\", \"driver\": \"...\", "
+                "\"instruments\": [\"XAUUSD\"], \"reason\": \"<short>\"}]. "
                 "No prose outside JSON. Never invent facts beyond the headline text."
             ),
         },
@@ -166,13 +171,15 @@ async def classify_news(limit: int = 30) -> dict:
             sentiment = item.get("sentiment")
             if idx not in url_by_index or sentiment not in ("bullish", "bearish", "neutral"):
                 continue
+            driver = item.get("driver")
+            driver = driver if driver in ("rates", "usd", "geopolitics", "physical", "positioning", "market", "other") else "other"
             conn.execute(
                 """
                 UPDATE news_articles
-                SET classified = true, sentiment = %s, instruments = %s
+                SET classified = true, sentiment = %s, instruments = %s, driver = %s
                 WHERE url = %s
                 """,
-                (sentiment, json.dumps(item.get("instruments", [])), url_by_index[idx]),
+                (sentiment, json.dumps(item.get("instruments", [])), driver, url_by_index[idx]),
             )
             updated += 1
     return {"classified": updated, "cache_hit": result.get("cache_hit", False), "model": result.get("model")}

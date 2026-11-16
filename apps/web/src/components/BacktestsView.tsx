@@ -1,4 +1,5 @@
 "use client";
+import { fmtUaeDateTime } from "@/lib/time";
 
 import { useCallback, useEffect, useState } from "react";
 
@@ -136,7 +137,7 @@ export function BacktestsView() {
                 {detail.trades.map((t, i) => (
                   <tr key={i} className="border-t border-line">
                     <td className={`px-3 py-2 ${t.direction === "long" ? "text-up" : "text-down"}`}>{t.direction}</td>
-                    <td className="px-3 py-2 text-muted">{t.entry_time.slice(5, 16).replace("T", " ")}</td>
+                    <td className="px-3 py-2 text-muted">{fmtUaeDateTime(t.entry_time)}</td>
                     <td className={`px-3 py-2 ${Number(t.r_multiple) >= 0 ? "text-up" : "text-down"}`}>{t.r_multiple ?? "—"}</td>
                     <td className="px-3 py-2">{t.pnl ?? "—"}</td>
                     <td className="px-3 py-2 text-muted">{t.exit_reason}</td>

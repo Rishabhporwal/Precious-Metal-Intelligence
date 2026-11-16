@@ -14,7 +14,7 @@ const CONFIG_ROWS: { label: string; value: string; note: string }[] = [
   { label: "Trading", value: "Paper only", note: "there is no live-broker code in this system" },
 ];
 
-export const metadata = { title: "Settings — PMI" };
+export const metadata = { title: "Settings — Aurex" };
 export const instant = false; // blocking dynamic route — status probes run per request
 
 async function StatusChips() {

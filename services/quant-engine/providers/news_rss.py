@@ -25,6 +25,13 @@ FEEDS = {
     "yahoo_gold": "https://feeds.finance.yahoo.com/rss/2.0/headline?s=GC=F&region=US&lang=en-US",
     "yahoo_silver": "https://feeds.finance.yahoo.com/rss/2.0/headline?s=SI=F&region=US&lang=en-US",
     "yahoo_usd": "https://feeds.finance.yahoo.com/rss/2.0/headline?s=DX-Y.NYB&region=US&lang=en-US",
+    # Wire-grade gold coverage (the same sources TradingView aggregates):
+    "fxstreet": "https://www.fxstreet.com/rss/news",
+    "investing_commodities": "https://www.investing.com/rss/news_11.rss",
+    "marketwatch": "https://feeds.content.dowjones.io/public/rss/mw_topstories",
+    # Geopolitics — safe-haven driver for gold (wars, sanctions, escalation)
+    "bbc_world": "http://feeds.bbci.co.uk/news/world/rss.xml",
+    "aljazeera": "https://www.aljazeera.com/xml/rss/all.xml",
 }
 
 _TAG_RE = re.compile(r"<[^>]+>")

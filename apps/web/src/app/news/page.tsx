@@ -1,6 +1,6 @@
 import { NewsEventsView } from "@/components/NewsEventsView";
 
-export const metadata = { title: "Global Intelligence — PMI" };
+export const metadata = { title: "World News — Aurex" };
 
 export default function NewsPage() {
   return (

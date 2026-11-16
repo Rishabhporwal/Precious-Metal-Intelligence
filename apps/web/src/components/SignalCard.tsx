@@ -1,4 +1,5 @@
 import { VerdictRefresh } from "@/components/VerdictRefresh";
+import { fmtUaeDateTime } from "@/lib/time";
 
 const API_INTERNAL_URL = process.env.API_INTERNAL_URL ?? "http://localhost:8000";
 
@@ -87,7 +88,7 @@ export async function SignalCard() {
       <div className="flex items-center justify-between">
         <span className="pill pill-gold">Trading Signal</span>
         <span className="num text-[11px] text-faint">
-          {new Date(s.created_at).toISOString().slice(5, 16).replace("T", " ")} UTC
+          {fmtUaeDateTime(s.created_at)} UAE
         </span>
       </div>
 

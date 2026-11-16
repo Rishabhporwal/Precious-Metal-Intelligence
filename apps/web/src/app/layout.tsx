@@ -14,9 +14,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "PMI — Precious Metals Intelligence",
+  title: "Aurex — Gold Intelligence",
   description:
-    "AI-powered Gold market intelligence: SMC/ICT strategy detection, macro analysis, risk-validated setups, paper trading and reproducible backtesting.",
+    "Aurex turns live gold data, world news and 7 professional strategies into one clear daily call — with the plan, the levels and the reasons.",
 };
 
 export const viewport: Viewport = {

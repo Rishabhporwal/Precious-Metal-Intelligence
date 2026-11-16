@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { StrategyLabView } from "@/components/StrategyLabView";
 import { PerformanceView } from "@/components/PerformanceView";
 
-export const metadata = { title: "Strategy Lab — PMI" };
+export const metadata = { title: "Strategy Lab — Aurex" };
 
 export default function StrategiesPage() {
   return (

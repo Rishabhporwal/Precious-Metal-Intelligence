@@ -169,8 +169,8 @@ def latest(symbol: str = Query(default="XAUUSD")) -> dict:
     if isinstance(meta, str):
         try:
             meta = json.loads(meta)
-        except Exception:
-            meta = {}
+        except ValueError:
+            meta = {}  # corrupted meta — degrade to empty, never crash the read
     if isinstance(meta, dict) and "evidence_split" in meta:
         row["evidence_split"] = meta["evidence_split"]
     return row

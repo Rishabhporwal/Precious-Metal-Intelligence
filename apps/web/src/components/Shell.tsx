@@ -106,14 +106,14 @@ export function Shell({ children }: { children: ReactNode }) {
 function Brand({ compact = false }: { compact?: boolean }) {
   return (
     <Link href="/" className="flex items-center gap-2.5 px-4 py-4">
-      <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-b from-[#f0c04a] to-[#c99414] text-[13px] font-bold text-[#4a3503] shadow-[0_1px_3px_rgba(120,90,0,0.35)] dark:text-[#231a02]">
-        ◆
+      <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-b from-[#f6d576] to-[#c99414] text-[15px] font-bold tracking-tight text-[#3d2c02] shadow-[0_2px_6px_rgba(140,100,0,0.35)] dark:text-[#1d1501]">
+        A
       </span>
       <span className="leading-tight">
-        <span className="block text-[13.5px] font-semibold tracking-tight text-ink">PMI</span>
+        <span className="block text-[15px] font-bold tracking-tight text-ink">Aurex</span>
         {!compact && (
-          <span className="block text-[9.5px] font-medium uppercase tracking-[0.14em] text-faint">
-            Gold Insights
+          <span className="block text-[9px] font-medium uppercase tracking-[0.18em] text-faint">
+            Gold Intelligence
           </span>
         )}
       </span>

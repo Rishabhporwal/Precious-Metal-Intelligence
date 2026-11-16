@@ -40,7 +40,7 @@ export default function HomePage() {
   return (
     <main className="page rise">
       <div className="mx-auto max-w-3xl">
-        <header className="mb-5">
+        <header className="mb-6">
           <h1 className="page-title">What should I do with gold today?</h1>
           <p className="page-sub">One clear answer — the call, the plan, and the reasons.</p>
         </header>
@@ -53,7 +53,7 @@ export default function HomePage() {
         <QuickActions />
 
         <footer className="mt-8 border-t border-line-subtle pt-4 text-[10.5px] leading-relaxed text-faint">
-          All data comes from real market feeds. PMI is not a broker and never places live orders.
+          All data comes from real market feeds. Aurex is not a broker and never places live orders.
         </footer>
       </div>
     </main>
