@@ -5,7 +5,6 @@ from pydantic import BaseModel
 from .api import (
     analyst,
     backtests,
-    confluence_ep,
     dataquality_ep,
     intelligence,
     macro,
@@ -18,7 +17,6 @@ from .api import (
     strategies,
     strategy_verdicts,
     technical,
-    trading,
     verdict,
 )
 from .config import get_settings
@@ -33,11 +31,9 @@ app.include_router(strategies.router)
 app.include_router(macro.router)
 app.include_router(quant_stats.router)
 app.include_router(analyst.router)
-app.include_router(trading.router)
 app.include_router(verdict.router)
 app.include_router(strategy_verdicts.router)
 app.include_router(performance.router)
-app.include_router(confluence_ep.router)
 app.include_router(signals.router)
 app.include_router(intelligence.router)
 app.include_router(missed_ep.router)

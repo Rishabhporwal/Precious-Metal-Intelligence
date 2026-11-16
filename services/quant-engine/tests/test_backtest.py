@@ -76,7 +76,7 @@ def _synthetic_backtest_rows():
 
 def test_backtest_runs_and_reports():
     rows = _synthetic_backtest_rows()
-    result = run_backtest("XAUUSD", "1h", "composite_sweep_mss_fvg_ob", rows=rows,
+    result = run_backtest("XAUUSD", "1h", "smc_liquidity_sweep", rows=rows,
                           daily=rows[-40:], hourly=rows[-24:], max_wait_bars=40)
     assert "error" not in result
     assert result["detections_found"] >= 0
@@ -92,7 +92,7 @@ def test_backtest_stops_are_pessimistic():
     closes += [102.0, 90.0]            # brief pop then huge gap-down candle
     closes += [90.0] * 40
     rows = _rows_from(closes)
-    result = run_backtest("XAUUSD", "1h", "composite_sweep_mss_fvg_ob", rows=rows,
+    result = run_backtest("XAUUSD", "1h", "smc_liquidity_sweep", rows=rows,
                           daily=rows[-40:], hourly=rows[-24:], max_wait_bars=40)
     for t in result["trades"]:
         if t["exit_reason"] == "stop":

@@ -21,7 +21,7 @@ def evaluate(
     symbol = symbol.upper()
     from strategies.registry import REGISTRY
 
-    ids = [strategy_id] if strategy_id else [s for s in REGISTRY if s != "composite_sweep_mss_fvg_ob"]
+    ids = [strategy_id] if strategy_id else list(REGISTRY)
     results: list[dict] = []
     for sid in ids:
         if sid not in REGISTRY:

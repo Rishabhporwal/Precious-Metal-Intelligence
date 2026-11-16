@@ -215,24 +215,6 @@ export async function registerMarketRoutes(app: FastifyInstance): Promise<void> 
     return reply.code(result.statusCode).send(result.body);
   });
 
-  app.post<{ Querystring: { symbol?: string; interval?: string } }>(
-    "/api/v1/strategies/evaluate_setups",
-    async (request, reply) => {
-      const symbol = ((request.query.symbol as string) ?? "XAUUSD").toUpperCase();
-      if (!SYMBOL_RE.test(symbol)) {
-        return reply.code(400).send({
-          error: { code: "INVALID_SYMBOL", message: "symbol must be 3-8 uppercase letters" },
-        } satisfies ApiErrorResponse);
-      }
-      const res = await fetch(
-        `${app.config.quantInternalUrl}/v1/strategies/evaluate_setups?symbol=${symbol}&interval=${request.query.interval ?? "1h"}`,
-        { method: "POST", signal: AbortSignal.timeout(60000) },
-      );
-      const payload = await res.json().catch(() => null);
-      return reply.code(res.ok ? 200 : res.status).send(payload);
-    },
-  );
-
   app.get<{ Querystring: { symbol?: string } }>("/api/v1/verdict/latest", async (request, reply) => {
     const symbol = ((request.query.symbol as string) ?? "XAUUSD").toUpperCase();
     if (!SYMBOL_RE.test(symbol)) {

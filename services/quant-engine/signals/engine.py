@@ -43,9 +43,7 @@ WEIGHTS = {
 GROUP_OF = {m: g for g, members in CORRELATED_GROUPS.items() for m in members}
 
 # momentum strategies count as "momentum leadership" for EARLY classification
-MOMENTUM_IDS = {"mom_trend_cont", "mom_breakout_retest", "mom_range_breakout",
-                "mom_expansion", "mom_ema_align", "mom_hh_hl", "mom_pullback",
-                "mom_mtf_align"}
+MOMENTUM_IDS = {"mom_ema_align"}
 
 # coarse EVIDENCE FAMILIES for the early/confirmed distinction (§2.2): several
 # strategies inside one family are related evidence, not independent confirmations

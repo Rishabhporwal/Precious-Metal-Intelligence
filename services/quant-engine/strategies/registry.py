@@ -1,89 +1,32 @@
-"""Strategy registry — single source of P0 strategy classes."""
+"""Strategy registry — the 7 production strategies (product decision: focus)."""
 
 from __future__ import annotations
 
 from strategies.base import Strategy
-from strategies.confluence import SweepMssFvgObComposite
 from strategies.ict import (
-    AsianRangeStrategy,
-    FailedBreakoutStrategy,
     FibonacciOTEStrategy,
     MarketStructureShiftStrategy,
-    PDLpDHStrategy,
-)
-from strategies.ict_p1 import (
-    AmdPowerOfThreeStrategy,
-    IctSilverBulletStrategy,
-    JudasSwingStrategy,
-    LiquidityVoidStrategy,
-    SessionRangeBreakoutStrategy,
 )
 from strategies.momentum import (
-    BreakoutRetestStrategy,
     EmaAlignmentStrategy,
-    HigherHighsStrategy,
-    MomentumExpansionStrategy,
-    MultiTimeframeAlignmentStrategy,
-    PullbackInTrendStrategy,
-    RangeBreakoutStrategy,
-    TrendContinuationStrategy,
-)
-from strategies.quant_strategies import (
-    HiddenDivergenceStrategy,
-    TrendExhaustionStrategy,
-    VolatilityRegimeStrategy,
-    WyckoffSosSowStrategy,
 )
 from strategies.smc import (
-    BreakerBlockStrategy,
-    DisplacementStrategy,
-    EqualHighsLowsStrategy,
     FairValueGapStrategy,
     LiquiditySweepStrategy,
     OrderBlockStrategy,
-    PremiumDiscountStrategy,
 )
-from strategies.smt import SMTDivergenceStrategy
-from strategies.wyckoff import WyckoffSpringStrategy, WyckoffUpthrustStrategy
+from strategies.wyckoff import (
+    WyckoffSpringStrategy,
+)
 
 ALL_STRATEGIES: list[type[Strategy]] = [
-    LiquiditySweepStrategy,
-    EqualHighsLowsStrategy,
-    MarketStructureShiftStrategy,
-    FairValueGapStrategy,
-    OrderBlockStrategy,
-    BreakerBlockStrategy,
-    DisplacementStrategy,
-    PremiumDiscountStrategy,
-    PDLpDHStrategy,
-    AsianRangeStrategy,
-    FibonacciOTEStrategy,
-    FailedBreakoutStrategy,
-    WyckoffSpringStrategy,
-    WyckoffUpthrustStrategy,
-    SMTDivergenceStrategy,
-    TrendContinuationStrategy,
-    BreakoutRetestStrategy,
-    RangeBreakoutStrategy,
-    MomentumExpansionStrategy,
-    EmaAlignmentStrategy,
-    HigherHighsStrategy,
-    PullbackInTrendStrategy,
-    MultiTimeframeAlignmentStrategy,
-    JudasSwingStrategy,
-    AmdPowerOfThreeStrategy,
-    IctSilverBulletStrategy,
-    SessionRangeBreakoutStrategy,
-    LiquidityVoidStrategy,
-    WyckoffSosSowStrategy,
-    HiddenDivergenceStrategy,
-    TrendExhaustionStrategy,
-    VolatilityRegimeStrategy,
-    SweepMssFvgObComposite,
+    LiquiditySweepStrategy,  # smc_liquidity_sweep
+    MarketStructureShiftStrategy,  # ict_mss
+    FairValueGapStrategy,  # smc_fvg
+    OrderBlockStrategy,  # smc_order_block
+    FibonacciOTEStrategy,  # ict_fib_ote
+    WyckoffSpringStrategy,  # wyckoff_spring
+    EmaAlignmentStrategy,  # mom_ema_align
 ]
 
-REGISTRY: dict[str, type[Strategy]] = {s.strategy_id: s for s in ALL_STRATEGIES}
-
-
-def get_strategy(strategy_id: str) -> type[Strategy] | None:
-    return REGISTRY.get(strategy_id)
+REGISTRY: dict[str, type[Strategy]] = {cls.strategy_id: cls for cls in ALL_STRATEGIES}

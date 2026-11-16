@@ -18,8 +18,8 @@ def _regime(trend="up", strength="strong"):
 
 def test_strong_buy_requires_regime_confirmation():
     verdicts = [
-        _v("mom_trend_cont", "BULLISH"), _v("mom_ema_align", "BULLISH"),
-        _v("mom_hh_hl", "BULLISH"), _v("smc_liquidity_sweep", "BULLISH"),
+        _v("mom_ema_align", "BULLISH"), _v("mom_ema_align", "BULLISH"),
+        _v("smc_fvg", "BULLISH"), _v("smc_liquidity_sweep", "BULLISH"),
         _v("smc_fvg", "BULLISH"), _v("ict_mss", "BULLISH"),
     ]
     d = decide(verdicts, _regime("up", "strong"), event_veto=False, veto_events=[],
@@ -30,7 +30,7 @@ def test_strong_buy_requires_regime_confirmation():
 
 def test_buy_without_regime_confirmation_is_not_strong():
     verdicts = [
-        _v("mom_trend_cont", "BULLISH"), _v("mom_breakout_retest", "BULLISH"),
+        _v("mom_ema_align", "BULLISH"), _v("ict_mss", "BULLISH"),
         _v("smc_liquidity_sweep", "BULLISH"), _v("smc_fvg", "BULLISH"),
     ]
     d = decide(verdicts, _regime("sideways", "weak"), event_veto=False, veto_events=[],
@@ -39,7 +39,7 @@ def test_buy_without_regime_confirmation_is_not_strong():
 
 
 def test_early_signal_when_momentum_leads_without_cross_group():
-    verdicts = [_v("mom_trend_cont", "BULLISH"), _v("mom_expansion", "BULLISH")]
+    verdicts = [_v("mom_ema_align", "BULLISH")]
     d = decide(verdicts, _regime("sideways"), event_veto=False, veto_events=[],
                price=100.0, prev_open_signal=None, plan_levels=None, interval="1h")
     assert d["signal_type"] == "EARLY_BUY"
@@ -47,7 +47,7 @@ def test_early_signal_when_momentum_leads_without_cross_group():
 
 
 def test_wait_when_lean_is_too_weak():
-    d = decide([_v("ict_pdh_pdl", "BULLISH")], _regime("sideways"), event_veto=False,
+    d = decide([_v("ict_fib_ote", "BULLISH")], _regime("sideways"), event_veto=False,
                veto_events=[], price=100.0, prev_open_signal=None, plan_levels=None, interval="1h")
     assert d["signal_type"] == "WAIT"
 
@@ -68,7 +68,7 @@ def test_event_veto_forces_wait_even_on_big_score():
 
 
 def test_invalidated_breaks_prior_long():
-    verdicts = [_v("mom_trend_cont", "BULLISH")]
+    verdicts = [_v("mom_ema_align", "BULLISH")]
     prev = {"signal_type": "BUY", "invalidation_level": 105.0}
     d = decide(verdicts, _regime("up"), event_veto=False, veto_events=[],
                price=104.0, prev_open_signal=prev, plan_levels=None, interval="1h")

@@ -22,14 +22,11 @@ from typing import Any
 # confluence dedupe (§7), exposed here for the schema's related-strategy fields
 CORRELATED_GROUPS: dict[str, list[str]] = {
     "structure": ["ict_mss"],
-    "sweep": ["smc_liquidity_sweep", "ict_pdh_pdl"],
-    "zones": ["smc_fvg", "smc_order_block", "smc_breaker", "smc_displacement"],
-    "levels": ["ict_asian_range", "ict_fib_ote"],
-    "patterns": ["price_action_failed_breakout", "quant_hidden_div", "quant_exhaustion"],
-    "wyckoff": ["wyckoff_spring", "wyckoff_upthrust", "wyckoff_sos_sow"],
-    "sessions": ["ict_judas", "ict_amd", "ict_silver_bullet", "ict_session_breakout", "ict_liquidity_void", "quant_vol_regime"],
-    "trend": ["mom_trend_cont", "mom_ema_align", "mom_hh_hl", "mom_mtf_align", "mom_pullback"],
-    "breakout": ["mom_breakout_retest", "mom_range_breakout", "mom_expansion"],
+    "sweep": ["smc_liquidity_sweep"],
+    "zones": ["smc_fvg", "smc_order_block"],
+    "levels": ["ict_fib_ote"],
+    "wyckoff": ["wyckoff_spring"],
+    "trend": ["mom_ema_align"],
 }
 
 # verdict window per interval: how fresh a detection must be to count as the

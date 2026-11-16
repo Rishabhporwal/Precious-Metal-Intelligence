@@ -17,7 +17,6 @@ logger = logging.getLogger("strategies")
 EVAL_INTERVALS = (CandleInterval.MIN_15, CandleInterval.HOUR_1, CandleInterval.DAY_1)
 
 # strategies that need a counterpart series injected (SMT)
-CROSS_MARKET = {"cross_market_smt": {"counterpart_symbol": "XAGUSD"}}
 
 
 def _load_configs() -> dict[str, dict]:
@@ -26,15 +25,6 @@ def _load_configs() -> dict[str, dict]:
         return {r["strategy_id"]: {"enabled": r["enabled"], "params": r["params"]} for r in cur.fetchall()}
 
 
-def _counterpart_rows(symbol: str, interval: str, limit: int = 500) -> list[dict]:
-    with get_pool().connection() as conn:
-        inst = store.get_instrument_by_symbol(conn, symbol)
-        if inst is None:
-            return []
-        try:
-            return store.get_candles(conn, inst["id"], CandleInterval(interval), limit=limit)
-        except ValueError:
-            return []
 
 
 def run_evaluation(symbol: str, interval: CandleInterval, limit: int = 1500) -> dict:
@@ -75,13 +65,9 @@ def run_evaluation(symbol: str, interval: CandleInterval, limit: int = 1500) -> 
         cfg = configs.get(strategy_id, {"enabled": True, "params": {}})
         if not cfg["enabled"]:
             continue
-        params = {**(cls.default_params or {}), **(cfg.get("params") or {})}
-        if strategy_id in CROSS_MARKET:
-            counterpart_symbol = CROSS_MARKET[strategy_id]["counterpart_symbol"]
-            params["counterpart_candles"] = _counterpart_rows(counterpart_symbol, interval.value)
         strategy = cls()
         try:
-            dets = strategy.detect(ctx) if strategy_id not in CROSS_MARKET or params.get("counterpart_candles") else []
+            dets = strategy.detect(ctx)
         except Exception as exc:  # noqa: BLE001 — one broken strategy must not kill the run
             logger.warning("strategy %s failed on %s %s: %s", strategy_id, symbol, interval.value, exc)
             continue

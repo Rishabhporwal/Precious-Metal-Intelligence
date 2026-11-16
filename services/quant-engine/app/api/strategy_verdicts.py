@@ -61,8 +61,6 @@ def evaluate(symbol: str = Query(default="XAUUSD"), interval: str = Query(defaul
 
     out: list[dict] = []
     for sid, name in sorted(_registry_iter()):
-        if sid == "composite_sweep_mss_fvg_ob":
-            continue  # composite belongs to the confluence layer, not individual verdicts
         dets = by_strategy.get(sid, [])
         v = sv.classify(sid, name, dets, price, interval, len(candles))
         v["instrument"] = symbol

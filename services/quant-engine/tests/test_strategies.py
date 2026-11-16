@@ -3,21 +3,16 @@
 from datetime import UTC, datetime, timedelta
 
 from strategies.base import build_context
-from strategies.confluence import SweepMssFvgObComposite
 from strategies.ict import (
-    AsianRangeStrategy,
     FibonacciOTEStrategy,
     MarketStructureShiftStrategy,
 )
 from strategies.smc import (
-    DisplacementStrategy,
-    EqualHighsLowsStrategy,
     FairValueGapStrategy,
     LiquiditySweepStrategy,
     OrderBlockStrategy,
-    PremiumDiscountStrategy,
 )
-from strategies.wyckoff import WyckoffSpringStrategy, WyckoffUpthrustStrategy
+from strategies.wyckoff import WyckoffSpringStrategy
 
 
 def _rows(closes, spread=1.0):
@@ -74,12 +69,6 @@ def test_order_block_zone_found():
     assert any("ATR" in e for e in d.evidence)
 
 
-def test_displacement_flags_large_body():
-    closes = [100.0] * 20 + [108.0] + [108.0] * 10  # 8-pt body after ATR warm-up
-    dets = DisplacementStrategy().detect(_ctx(closes))
-    assert dets and dets[0].direction == "bullish"
-
-
 def test_mss_requires_displacement():
     closes = [float(i) for i in range(20, 40)] + [38.0]
     dets = MarketStructureShiftStrategy().detect(_ctx(closes))
@@ -88,40 +77,11 @@ def test_mss_requires_displacement():
         assert any("ATR" in e for e in d.evidence)
 
 
-def test_composite_bullish_scenario():
-    # range -> sweep of the range low with reclaim -> displacement up (MSS)
-    closes = ([100.0 + (i % 4) * 0.5 for i in range(30)]   # churn, defines ATR
-              + [98.0, 97.0, 100.5]                         # sweep low 96.6 + reclaim close 100.5
-              + [103.0, 106.0, 108.0, 110.0]                # displacement up
-              + [110.0] * 6)
-    ctx = _ctx(closes, spread=0.4)
-    dets = SweepMssFvgObComposite().detect(ctx)
-    bullish = [d for d in dets if d.direction == "bullish"]
-    assert bullish, "expected a bullish composite candidate"
-    d = bullish[-1]
-    joined = " ".join(d.evidence)
-    assert "Liquidity sweep" in joined
-    # levels computed in python (targets may need entry+stop; at minimum stop present)
-    assert d.levels.get("stop") is not None or any(k.startswith("target_") for k in d.levels)
-
-
-def test_wyckoff_spring_and_upthrust():
+def test_wyckoff_spring():
     # range 100-102 for 20 bars, then dip below 100 and reclaim
     closes = [101.0] * 20 + [99.5, 100.5] + [100.8] * 5
     dets = WyckoffSpringStrategy().detect(_ctx(closes, spread=0.3))
     assert dets and dets[-1].direction == "bullish"
-    # range then push above 102 and fail
-    closes2 = [101.0] * 20 + [102.8, 101.5] + [101.2] * 5
-    dets2 = WyckoffUpthrustStrategy().detect(_ctx(closes2, spread=0.3))
-    assert dets2 and dets2[-1].direction == "bearish"
-
-
-def test_premium_discount_zones():
-    # zigzag creates confirmed swings: peak 104, trough 100, peak 103
-    closes = [100.0, 102.0, 104.0, 102.0, 100.0, 101.5, 103.0, 101.0, 100.5, 100.8]
-    closes = closes * 3
-    dets = PremiumDiscountStrategy().detect(_ctx(closes))
-    assert dets and dets[0].levels["equilibrium"] is not None
 
 
 def test_fib_ote_zone():
@@ -143,17 +103,3 @@ def test_fib_ote_zone():
     assert d.status == "active"  # price 104 inside zone
 
 
-def test_eqh_eql_pool():
-    closes = [100.0, 102.0, 100.5, 102.05, 101.0] * 4
-    dets = EqualHighsLowsStrategy().detect(_ctx(closes))
-    eqh = [d for d in dets if "EQH" in " ".join(d.evidence)]
-    assert eqh, "expected EQH pool detection"
-
-
-def test_asian_range_position():
-    sessions = {"asia": {"date": "2026-10-01", "high": 101.0, "low": 99.0}}
-    closes = [100.0] * 10 + [101.5]
-    ctx = _ctx(closes)
-    object.__setattr__(ctx, "sessions", sessions)
-    dets = AsianRangeStrategy().detect(ctx)
-    assert dets and dets[0].direction == "bullish"
