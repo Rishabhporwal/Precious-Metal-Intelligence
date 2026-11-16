@@ -146,7 +146,7 @@ async def generate(symbol: str = Query(default="XAUUSD")) -> dict:
         raise HTTPException(status_code=409, detail=v["error"])
 
     narrative, llm_meta = await _narrative(v)
-    vid = _persist(v, narrative, llm_meta)
+    vid = _persist(v, narrative, {**(llm_meta or {}), "evidence_split": v.get("evidence_split")})
     return {"verdict_id": vid, **v, "narrative": narrative, "llm_meta": llm_meta}
 
 
@@ -165,4 +165,12 @@ def latest(symbol: str = Query(default="XAUUSD")) -> dict:
         raise HTTPException(status_code=404, detail="no verdict yet — generate one")
     row = dict(row)
     row["as_of"] = row["as_of"].isoformat() if row["as_of"] else None
+    meta = row.get("llm_meta") or {}
+    if isinstance(meta, str):
+        try:
+            meta = json.loads(meta)
+        except Exception:
+            meta = {}
+    if isinstance(meta, dict) and "evidence_split" in meta:
+        row["evidence_split"] = meta["evidence_split"]
     return row
