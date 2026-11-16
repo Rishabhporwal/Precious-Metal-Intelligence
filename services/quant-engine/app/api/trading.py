@@ -1,13 +1,12 @@
-"""Trading intelligence API: setups, alerts, paper trading."""
+"""Trading intelligence API: trade setups."""
 
 from __future__ import annotations
 
 import json
 
 from fastapi import APIRouter, HTTPException, Query
-from pydantic import BaseModel
 
-from app import alerts, risk
+from app import risk
 from app.db import get_pool
 from app.marketdata import store
 from strategies import engine as strategy_engine
@@ -107,35 +106,3 @@ def list_setups(symbol: str = Query(default="XAUUSD"), limit: int = Query(defaul
 # --------------------------------------------------------------- paper ---
 
 
-class AlertRuleRequest(BaseModel):
-    kind: str
-    symbol: str = "XAUUSD"
-    params: dict = {}
-    severity: str = "info"
-    cooldown_seconds: int = 3600
-
-
-@router.get("/alerts")
-def list_alert_rules() -> dict:
-    return {"rules": alerts.list_rules(), "recent_events": alerts.recent_events(20)}
-
-
-@router.post("/alerts")
-def create_alert(req: AlertRuleRequest) -> dict:
-    if req.kind not in ("price_above", "price_below", "sweep", "fvg", "bos_choch", "setup_new", "analysis_new"):
-        raise HTTPException(status_code=400, detail="unknown alert kind")
-    if req.severity not in ("info", "warning", "critical"):
-        raise HTTPException(status_code=400, detail="severity must be info|warning|critical")
-    return alerts.create_rule(req.kind, req.symbol, req.params, req.severity, req.cooldown_seconds)
-
-
-@router.delete("/alerts/{rule_id}")
-def delete_alert(rule_id: int) -> dict:
-    if not alerts.delete_rule(rule_id):
-        raise HTTPException(status_code=404, detail="rule not found")
-    return {"deleted": True}
-
-
-@router.post("/alerts/evaluate")
-def evaluate_alerts() -> dict:
-    return alerts.evaluate_all()

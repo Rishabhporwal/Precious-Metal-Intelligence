@@ -233,36 +233,6 @@ export async function registerMarketRoutes(app: FastifyInstance): Promise<void> 
     },
   );
 
-  app.get("/api/v1/alerts", async (_request, reply) => {
-    const result = await proxy(app, "/v1/alerts");
-    return reply.code(result.statusCode).send(result.body);
-  });
-
-  app.post("/api/v1/alerts", async (request, reply) => {
-    const res = await fetch(`${app.config.quantInternalUrl}/v1/alerts`, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify(request.body ?? {}),
-      signal: AbortSignal.timeout(15000),
-    });
-    const payload = await res.json().catch(() => null);
-    return reply.code(res.ok ? 200 : res.status).send(payload);
-  });
-
-  app.delete<{ Params: { id?: string } }>("/api/v1/alerts/:id", async (request, reply) => {
-    const result = await proxy(app, `/v1/alerts/${request.params.id}`);
-    return reply.code(result.statusCode).send(result.body);
-  });
-
-  app.post("/api/v1/alerts/evaluate", async (_request, reply) => {
-    const res = await fetch(`${app.config.quantInternalUrl}/v1/alerts/evaluate`, {
-      method: "POST",
-      signal: AbortSignal.timeout(30000),
-    });
-    const payload = await res.json().catch(() => null);
-    return reply.code(res.ok ? 200 : res.status).send(payload);
-  });
-
   app.get<{ Querystring: { symbol?: string } }>("/api/v1/verdict/latest", async (request, reply) => {
     const symbol = ((request.query.symbol as string) ?? "XAUUSD").toUpperCase();
     if (!SYMBOL_RE.test(symbol)) {

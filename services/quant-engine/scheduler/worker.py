@@ -43,7 +43,7 @@ NEWS_INTERVAL = int(os.environ.get("NEWS_INTERVAL_SECONDS", "1800"))
 ANALYSIS_INTERVAL = int(os.environ.get("ANALYSIS_INTERVAL_SECONDS", str(12 * 3600)))
 DAILY_BRIEF_HOUR_NOTE = "brief fires once per day at 08:00 IST"
 VERDICT_INTERVAL = int(os.environ.get("VERDICT_INTERVAL_SECONDS", str(6 * 3600)))
-ALERTS_INTERVAL = int(os.environ.get("ALERTS_INTERVAL_SECONDS", "120"))
+SETUPS_INTERVAL = int(os.environ.get("SETUPS_INTERVAL_SECONDS", "120"))
 STRATEGY_VERDICT_INTERVAL = int(os.environ.get("STRATEGY_VERDICT_INTERVAL_SECONDS", str(15 * 60)))
 SIGNAL_INTERVAL = int(os.environ.get("SIGNAL_INTERVAL_SECONDS", str(15 * 60)))
 
@@ -185,11 +185,8 @@ def sync_daily_brief() -> None:
             logger.warning("daily brief not sent: %s", err)
 
 
-def sync_alerts_and_setups() -> None:
-    """Alert evaluation + setup evaluation (cheap, local)."""
-    from app import alerts
-
-    alert_counts = alerts.evaluate_all()
+def sync_setups() -> None:
+    """Setup evaluation (cheap, local)."""
     setups = 0
     try:
         import httpx
@@ -202,7 +199,7 @@ def sync_alerts_and_setups() -> None:
             setups = r.json().get("valid_created", 0)
     except Exception as exc:  # noqa: BLE001
         logger.debug("setup evaluation skipped: %s", exc)
-    logger.info("alerts+setups sync: alerts=%s new_valid_setups=%s", alert_counts, setups)
+    logger.info("setups sync: new_valid_setups=%s", setups)
 
 
 def run() -> None:
@@ -257,9 +254,9 @@ def run() -> None:
             if now - last.get("signals", 0) >= SIGNAL_INTERVAL:
                 sync_signals()
                 last["signals"] = now
-            if now - last.get("alerts", 0) >= ALERTS_INTERVAL:
-                sync_alerts_and_setups()
-                last["alerts"] = now
+            if now - last.get("setups", 0) >= SETUPS_INTERVAL:
+                sync_setups()
+                last["setups"] = now
             sync_daily_brief()
         except Exception:
             logger.exception("scheduler cycle failed")
