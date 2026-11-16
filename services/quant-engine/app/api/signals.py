@@ -112,7 +112,7 @@ def generate(symbol: str = Query(default="XAUUSD"), interval: str = Query(defaul
     })
 
     # evidence reconciliation (§9): four explicit verdicts before the final call
-    news_articles_all = __import__("app.macrodata", fromlist=["latest_news"]).latest_news(60)
+    news_articles_all = __import__("app.macrodata", fromlist=["latest_news"]).latest_news(60, classified_only=True)
     news_net = sum(1 for a in news_articles_all if a.get("sentiment") == "bullish") - sum(
         1 for a in news_articles_all if a.get("sentiment") == "bearish")
     news_classified = sum(1 for a in news_articles_all if a.get("sentiment"))

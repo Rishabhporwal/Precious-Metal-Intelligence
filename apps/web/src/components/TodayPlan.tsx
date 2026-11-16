@@ -47,8 +47,19 @@ interface Signal {
 interface NewsArticle {
   title: string;
   sentiment: string | null;
+  driver?: string | null;
   published_at: string;
 }
+
+const DRIVER_LABEL: Record<string, string> = {
+  rates: "Interest rates & the Fed",
+  usd: "The US dollar",
+  geopolitics: "Wars & world tensions",
+  physical: "Physical demand & supply",
+  positioning: "Big-trader positioning",
+  market: "Overall market mood",
+  other: "Other factors",
+};
 
 const usd = (n: number) => `$${n.toLocaleString("en-US", { maximumFractionDigits: 0 })}`;
 
@@ -115,18 +126,26 @@ function whyBullets(verdict: Verdict, signal: Signal | null, news: NewsArticle[]
   else if (dt === "up" || ht === "up")
     out.push("The price has been rising — buyers have been in control on the charts.");
 
-  // news, in plain words
+  // news, in plain words — with the DRIVER mix (rates vs war vs dollar etc.)
   const recent = (news ?? []).filter(
     (a) => a.sentiment === "bullish" || a.sentiment === "bearish",
   );
   if (recent.length) {
-    const bull = recent.filter((a) => a.sentiment === "bullish").length;
-    const bear = recent.filter((a) => a.sentiment === "bearish").length;
-    if (bear > bull)
-      out.push(`Recent news has been mostly negative for gold (${bear} negative vs ${bull} positive headlines).`);
-    else if (bull > bear)
-      out.push(`Recent news has been mostly positive for gold (${bull} positive vs ${bear} negative headlines).`);
-    else out.push("Recent news is mixed — nothing pushing gold strongly either way.");
+    const byDriver = new Map<string, { bull: number; bear: number }>();
+    for (const a of recent) {
+      const d = a.driver && DRIVER_LABEL[a.driver] ? a.driver : "other";
+      const slot = byDriver.get(d) ?? { bull: 0, bear: 0 };
+      if (a.sentiment === "bullish") slot.bull += 1;
+      else slot.bear += 1;
+      byDriver.set(d, slot);
+    }
+    const ranked = [...byDriver.entries()].sort(
+      (x, y) => Math.abs(y[1].bear - y[1].bull) - Math.abs(x[1].bear - x[1].bull),
+    );
+    for (const [driver, { bull, bear }] of ranked.slice(0, 3)) {
+      const lean = bear > bull ? "pulling gold down" : bull > bear ? "pushing gold up" : "balanced";
+      out.push(`${DRIVER_LABEL[driver]}: ${bear} negative vs ${bull} positive headlines — ${lean}.`);
+    }
   }
 
   // event risk, in plain words
@@ -194,7 +213,7 @@ export async function TodayPlan() {
 
   return (
     <div className="space-y-4">
-      <div className="card p-6 sm:p-8">
+      <div className="card card-accent p-6 sm:p-8">
         {/* THE HEADLINE */}
         <div className="flex flex-wrap items-center gap-2">
           <span className="pill">Today&apos;s call</span>

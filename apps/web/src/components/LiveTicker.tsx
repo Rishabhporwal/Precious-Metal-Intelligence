@@ -92,7 +92,7 @@ export function LiveTicker() {
           </div>
           <div className="mt-3 flex items-baseline gap-3">
             <span
-              className={`metric-xl text-[56px] transition-colors duration-500 ${
+              className={`metric-xl text-[64px] transition-colors duration-500 ${
                 direction === "up"
                   ? "text-up"
                   : direction === "down"

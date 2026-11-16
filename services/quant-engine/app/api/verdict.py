@@ -26,11 +26,28 @@ router = APIRouter(prefix="/v1/verdict", tags=["verdict"])
 HIGH_IMPACT_HINT = "CPI, NFP, FOMC, PCE within 48h forces stand-aside"
 
 
-def _news_net(articles: list[dict]) -> int | None:
-    sentiments = [a["sentiment"] for a in articles if a.get("sentiment")]
-    if not sentiments:
+# Driver weights: rates/USD move gold hard and last; geopolitics hits fast but
+# fades; physical/positioning are slower burn. Deterministic, documented.
+DRIVER_WEIGHTS = {
+    "rates": 1.0, "usd": 1.0, "geopolitics": 0.8, "physical": 0.6,
+    "positioning": 0.5, "market": 0.4, "other": 0.5,
+}
+
+
+def _news_net(articles: list[dict]) -> float | None:
+    """Driver-weighted net news vote, clipped to ±0.5 (the news weight budget)."""
+    votes: list[float] = []
+    for a in articles:
+        sent = a.get("sentiment")
+        if not sent:
+            continue
+        driver = a.get("driver") or "other"
+        w = DRIVER_WEIGHTS.get(driver, 0.5)
+        votes.append(w if sent == "bullish" else -w if sent == "bearish" else 0.0)
+    if not votes:
         return None
-    return sum(1 for s in sentiments if s == "bullish") - sum(1 for s in sentiments if s == "bearish")
+    raw = sum(votes)
+    return round(max(-0.5, min(0.5, raw * 0.25)), 2)
 
 
 def _strategy_bias_48h(symbol: str) -> dict:
@@ -140,7 +157,7 @@ async def generate(symbol: str = Query(default="XAUUSD")) -> dict:
         hourly=hourly,
         strategy_bias=_strategy_bias_48h(symbol),
         events=upcoming_events(10, 1),
-        news_net=_news_net(latest_news(15)),
+        news_net=_news_net(latest_news(30, classified_only=True)),
     )
     if "error" in v:
         raise HTTPException(status_code=409, detail=v["error"])

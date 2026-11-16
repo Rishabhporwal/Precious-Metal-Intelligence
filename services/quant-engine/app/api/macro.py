@@ -73,6 +73,7 @@ def news(limit: int = Query(default=20, ge=1, le=100)) -> dict:
                 "published_at": r["published_at"].isoformat() if r["published_at"] else None,
                 "classified": r["classified"],
                 "sentiment": r["sentiment"],
+                "driver": r.get("driver"),
             }
             for r in rows
         ],

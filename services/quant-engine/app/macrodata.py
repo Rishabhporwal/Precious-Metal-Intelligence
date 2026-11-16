@@ -128,12 +128,14 @@ def upcoming_events(days_ahead: int = 30, past_days: int = 14) -> list[dict]:
         return cur.fetchall()
 
 
-def latest_news(limit: int = 20) -> list[dict]:
+def latest_news(limit: int = 20, classified_only: bool = False) -> list[dict]:
+    where = "WHERE classified" if classified_only else ""
     with get_pool().connection() as conn:
         cur = conn.execute(
-            """
-            SELECT source, url, title, summary, published_at, fetched_at, classified, sentiment
+            f"""
+            SELECT source, url, title, summary, published_at, fetched_at, classified, sentiment, driver
             FROM news_articles
+            {where}
             ORDER BY COALESCE(published_at, fetched_at) DESC
             LIMIT %s
             """,
