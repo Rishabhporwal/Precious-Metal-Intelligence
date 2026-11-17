@@ -21,11 +21,18 @@ interface EvidenceSplit {
   components?: { label: string; points: number; direction: string }[];
 }
 
+interface VerdictDriver {
+  source?: string;
+  label?: string;
+  plain?: string;
+}
+
 interface Verdict {
   direction: string;
   confidence: string;
   score?: number;
   evidence_split?: EvidenceSplit;
+  drivers?: VerdictDriver[];
   as_of: string;
   plan?: VerdictPlan;
   key_levels?: { supports?: number[]; resistances?: number[]; prev_day_low?: number; prev_day_high?: number };
@@ -119,6 +126,9 @@ function confidenceWord(c: string): string {
 
 function whyBullets(verdict: Verdict, signal: Signal | null, news: NewsArticle[] | null): string[] {
   const out: string[] = [];
+  for (const d of verdict.drivers ?? []) {
+    if (d.source === "physical" && d.plain) out.push(d.plain);
+  }
   const dt = (verdict.trend_daily?.trend ?? "").toLowerCase();
   const ht = (verdict.trend_hourly?.trend ?? "").toLowerCase();
   if (dt === "down" || ht === "down")

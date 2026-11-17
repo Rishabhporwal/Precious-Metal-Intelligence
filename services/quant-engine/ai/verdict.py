@@ -26,6 +26,7 @@ W_TREND_DAILY = 2.0
 W_TREND_H1 = 1.0
 W_STRATEGY_BIAS = 1.0
 W_NEWS = 0.5
+W_GLD = 0.5  # physical demand: ETF inflows = buying pressure, outflows = selling
 
 
 def _atr_from_daily(daily: list[dict]) -> float | None:
@@ -42,7 +43,8 @@ def _direction_score(
     trend_daily: str,
     trend_hourly: str,
     strategy_bias: dict,
-    news_net: int | None,
+    news_net: float | None,
+    gld_delta: float | None = None,
 ) -> tuple[float, list[dict]]:
     """Weighted votes -> score in roughly [-4.5, +4.5]. Positive = bullish."""
     score = 0.0
@@ -90,6 +92,22 @@ def _direction_score(
             "source": "news",
             "label": f"News sentiment net {news_net:+.2f} (driver-weighted)",
             "plain": f"Recent headlines lean {'positive' if news_net > 0 else 'negative'} for gold.",
+            "vote": v,
+        })
+
+    # physical demand: GLD ETF tonnage delta over 30d. Meaningful only when the
+    # flow is sizable relative to the trust (~1000t): ±5t over a month is noise.
+    if gld_delta is not None and abs(gld_delta) >= 5:
+        v = W_GLD if gld_delta > 0 else -W_GLD
+        score += v
+        drivers.append({
+            "source": "physical",
+            "label": f"GLD ETF holdings {'+' if gld_delta > 0 else ''}{gld_delta:.1f}t (30d)",
+            "plain": (
+                f"Investors {'added' if gld_delta > 0 else 'pulled'} about {abs(gld_delta):.0f} tonnes "
+                f"{'into' if gld_delta > 0 else 'out of'} the biggest gold fund this month — "
+                f"physical demand is {'rising' if gld_delta > 0 else 'falling'}."
+            ),
             "vote": v,
         })
     # evidence split: of the weighted evidence that actually voted (non-zero),
@@ -204,7 +222,8 @@ def build_verdict(
     hourly: list[dict],
     strategy_bias: dict,
     events: list[dict],
-    news_net: int | None,
+    news_net: float | None,
+    gld_delta: float | None = None,
 ) -> dict:
     now = datetime.now(UTC)
     if quote_price is None:
@@ -237,7 +256,8 @@ def build_verdict(
         if e20 and e50:
             trend_hourly = "up" if e20 > e50 * 1.0005 else "down" if e20 < e50 * 0.9995 else "sideways"
 
-    score, drivers, evidence_split = _direction_score(trend_daily, trend_hourly, strategy_bias, news_net)
+    score, drivers, evidence_split = _direction_score(
+        trend_daily, trend_hourly, strategy_bias, news_net, gld_delta)
 
     veto, veto_events = event_veto(events, now)
 

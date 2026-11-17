@@ -142,3 +142,49 @@ def latest_news(limit: int = 20, classified_only: bool = False) -> list[dict]:
             (limit,),
         )
         return cur.fetchall()
+
+
+def upsert_gld_holdings(rows: list[dict]) -> int:
+    """Store GLD daily tonnage rows: [{date, tonnes, closing_price}]."""
+    written = 0
+    with get_pool().connection() as conn:
+        for r in rows:
+            cur = conn.execute(
+                """
+                INSERT INTO gld_holdings (date, tonnes, closing_price)
+                VALUES (%s, %s, %s)
+                ON CONFLICT (date) DO UPDATE SET
+                    tonnes = EXCLUDED.tonnes, closing_price = EXCLUDED.closing_price
+                """,
+                (r["date"], r["tonnes"], r.get("closing_price")),
+            )
+            written += cur.rowcount
+    return written
+
+
+def gld_holdings_summary(days: int = 30) -> dict | None:
+    """Latest GLD tonnage + the delta over `days` — the physical-demand read."""
+    with get_pool().connection() as conn:
+        rows = conn.execute(
+            """
+            SELECT date, tonnes::float AS tonnes FROM gld_holdings
+            ORDER BY date DESC LIMIT 60
+            """
+        ).fetchall()
+    if not rows:
+        return None
+    latest = rows[0]
+    baseline_row = next(
+        (r for r in rows if (latest["date"] - r["date"]).days >= days), None
+    )
+    if baseline_row is None:
+        # table younger than the window — use the oldest row we have, honestly
+        baseline_row = rows[-1]
+    span_days = (latest["date"] - baseline_row["date"]).days or 1
+    delta = latest["tonnes"] - baseline_row["tonnes"]
+    return {
+        "date": latest["date"].isoformat() if latest["date"] else None,
+        "tonnes": latest["tonnes"],
+        "delta_days": span_days,
+        "delta_tonnes": round(delta, 2),
+    }

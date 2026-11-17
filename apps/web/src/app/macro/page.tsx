@@ -71,7 +71,7 @@ async function MacroData() {
   if (!summary) {
     return (
       <p className="card p-5 border-[rgba(246,70,93,0.3)] bg-[var(--down-dim)] text-sm text-down">
-        Macro API unreachable — check the scheduler and quant services.
+        The economic data service is briefly unavailable — the page refreshes itself, so check back in a minute.
       </p>
     );
   }
@@ -84,7 +84,7 @@ async function MacroData() {
     <>
       <section>
         <h2 className="mb-2 card-title text-muted">
-          FRED macro series (FRED_API_KEY {summary.provider_health.fred.credentials_configured ? "configured" : "MISSING"})
+          Official economic data
         </h2>
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
           {summary.series.map((s) => {
@@ -112,7 +112,7 @@ async function MacroData() {
             );
           })}
           {summary.series.length === 0 && (
-            <p className="text-xs text-warn">No FRED data yet — scheduler will sync within minutes.</p>
+            <p className="text-xs text-warn">Economic data loads shortly — it refreshes automatically.</p>
           )}
         </div>
       </section>
@@ -120,8 +120,12 @@ async function MacroData() {
       <section className="mt-6 grid grid-cols-1 gap-3 md:grid-cols-2">
         <div className="card p-5">
           <h2 className="card-title text-muted">
-            CFTC futures-only COT — net non-commercial
+            How big traders are positioned
           </h2>
+          <p className="mt-1 text-[10.5px] leading-relaxed text-faint">
+            Large professional funds&rsquo; net bets on gold, from the official weekly report. Net
+            long = more money betting on rises.
+          </p>
           {summary.cftc.length === 0 ? (
             <p className="mt-2 text-xs text-warn">No CFTC data yet.</p>
           ) : (
@@ -138,7 +142,7 @@ async function MacroData() {
                     </span>
                   </div>
                   <div className="text-[10px] text-faint">
-                    report {c.as_of_date} · {pctLong ?? "—"}% long / {pctShort ?? "—"}% short of OI
+                    {pctLong ?? "—"}% betting on rises · {pctShort ?? "—"}% betting on falls · report {c.as_of_date}
                   </div>
                 </div>
               );
@@ -172,7 +176,7 @@ async function MacroData() {
 
       <section className="mt-6">
         <h2 className="mb-2 card-title text-muted">
-          Market news (RSS · unclassified until the Phase 7 LLM lands)
+          Market news — headlines we scan for gold-moving events
         </h2>
         <div className="space-y-2">
           {(news?.articles ?? []).slice(0, 10).map((a) => (
@@ -194,7 +198,7 @@ async function MacroData() {
             </div>
           ))}
           {(news?.articles ?? []).length === 0 && (
-            <p className="text-xs text-warn">No news synced yet — scheduler will fetch within minutes.</p>
+            <p className="text-xs text-warn">News loads shortly — it refreshes automatically.</p>
           )}
         </div>
       </section>
@@ -221,7 +225,7 @@ export default function MacroPage() {
         </Suspense>
         <footer className="mt-8 border-t border-line-subtle pt-4 text-[10.5px] text-faint">
           <a className="text-muted underline" href="/">← dashboard</a> ·
-          macro observations are stored with fetch vintage; news content is untrusted input parsed to text only
+          Data sources: Federal Reserve (FRED) and the CFTC weekly positioning report. News headlines link to their original publishers.
         </footer>
       </div>
     </main>

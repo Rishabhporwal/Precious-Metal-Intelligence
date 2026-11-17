@@ -49,11 +49,6 @@ const TERMS: { term: string; plain: string; deeper: string }[] = [
     plain: "How much you stand to make versus what you risk. 2:1 means targeting twice what you're risking.",
     deeper: "Our risk engine rejects setups below 1.5:1 and sizes positions so a stop-out costs 1% of account equity.",
   },
-  {
-    term: "Paper trading",
-    plain: "Practicing with pretend money. Same prices, same mechanics — zero real risk.",
-    deeper: "Our simulator fills orders at stored quotes and assumes the worse outcome when a candle touches both your stop and target.",
-  },
 ];
 
 export default function LearnPage() {

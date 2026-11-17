@@ -47,9 +47,8 @@ export function NewsEventsView() {
   if (events.length === 0) {
     return (
       <p className="card p-5 text-xs text-muted">
-        No clustered events yet. Events form when the news engine classifies incoming headlines and
-        groups them into underlying events — currently paused because the LLM provider is out of
-        credits (402). Classification resumes automatically once credits are available.
+        No events yet. Events appear once enough related headlines are collected — usually within
+        the hour. This page refreshes itself automatically.
       </p>
     );
   }

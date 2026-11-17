@@ -16,7 +16,7 @@ from pydantic import BaseModel
 
 from ai.verdict import build_verdict
 from app.db import get_pool
-from app.macrodata import latest_news, upcoming_events
+from app.macrodata import gld_holdings_summary, latest_news, upcoming_events
 from app.marketdata import store
 from providers.base import CandleInterval
 from strategies.engine import recent_detections
@@ -158,6 +158,7 @@ async def generate(symbol: str = Query(default="XAUUSD")) -> dict:
         strategy_bias=_strategy_bias_48h(symbol),
         events=upcoming_events(10, 1),
         news_net=_news_net(latest_news(30, classified_only=True)),
+        gld_delta=(gld_holdings_summary(30) or {}).get("delta_tonnes"),
     )
     if "error" in v:
         raise HTTPException(status_code=409, detail=v["error"])

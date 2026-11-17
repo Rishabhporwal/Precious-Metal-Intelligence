@@ -42,6 +42,7 @@ CFTC_INTERVAL = int(os.environ.get("CFTC_INTERVAL_SECONDS", str(12 * 3600)))
 NEWS_INTERVAL = int(os.environ.get("NEWS_INTERVAL_SECONDS", "1800"))
 ANALYSIS_INTERVAL = int(os.environ.get("ANALYSIS_INTERVAL_SECONDS", str(12 * 3600)))
 DAILY_BRIEF_HOUR_NOTE = "brief fires once per day at 08:00 IST"
+GLD_SYNC_INTERVAL = int(os.environ.get("GLD_SYNC_INTERVAL_SECONDS", str(6 * 3600)))
 VERDICT_INTERVAL = int(os.environ.get("VERDICT_INTERVAL_SECONDS", str(6 * 3600)))
 STRATEGY_VERDICT_INTERVAL = int(os.environ.get("STRATEGY_VERDICT_INTERVAL_SECONDS", str(15 * 60)))
 SIGNAL_INTERVAL = int(os.environ.get("SIGNAL_INTERVAL_SECONDS", str(15 * 60)))
@@ -185,6 +186,21 @@ def sync_daily_brief() -> None:
 
 
 
+def sync_gld() -> None:
+    """Daily GLD ETF tonnage (physical demand) — SPDR archive, no key needed."""
+
+    from app.macrodata import gld_holdings_summary, upsert_gld_holdings
+    from providers.gld import fetch_gld_holdings
+
+    rows = fetch_gld_holdings(max_rows=70)
+    written = upsert_gld_holdings(rows)
+    summary = gld_holdings_summary(30)
+    logger.info(
+        "gld sync: %s rows stored | latest %.1ft on %s (30d delta %s t)",
+        written, (summary or {}).get("tonnes", 0) or 0,
+        (summary or {}).get("date", "?"), (summary or {}).get("delta_tonnes", "?"),
+    )
+
 def run() -> None:
     logger.info("scheduler starting (macro %ss / calendar %ss / cftc %ss / news %ss)",
                 MACRO_INTERVAL, CALENDAR_INTERVAL, CFTC_INTERVAL, NEWS_INTERVAL)
@@ -192,7 +208,7 @@ def run() -> None:
     cftc = CftcProvider()
     get_pool()  # open pool eagerly
 
-    last = {"macro": 0.0, "calendar": 0.0, "cftc": 0.0, "news": 0.0}
+    last = {"macro": 0.0, "calendar": 0.0, "cftc": 0.0, "news": 0.0, "gld": 0.0}
 
     # initial syncs
     sync_macro(fred)
@@ -208,6 +224,10 @@ def run() -> None:
     sync_verdict()
     sync_strategy_verdicts()
     sync_signals()
+    try:
+        sync_gld()
+    except Exception as exc:  # noqa: BLE001 — a failed archive fetch must not kill boot
+        logger.warning("gld boot sync failed: %s", exc)
 
     while True:
         time.sleep(30)
@@ -237,6 +257,12 @@ def run() -> None:
             if now - last.get("signals", 0) >= SIGNAL_INTERVAL:
                 sync_signals()
                 last["signals"] = now
+            if now - last.get("gld", 0) >= GLD_SYNC_INTERVAL:
+                try:
+                    sync_gld()
+                except Exception as exc:  # noqa: BLE001
+                    logger.warning("gld sync failed: %s", exc)
+                last["gld"] = now
             sync_daily_brief()
         except Exception:
             logger.exception("scheduler cycle failed")

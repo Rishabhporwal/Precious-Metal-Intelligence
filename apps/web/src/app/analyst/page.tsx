@@ -44,7 +44,7 @@ async function AnalystData() {
   if (!res) {
     return (
       <p className="card p-5 border-[rgba(246,70,93,0.3)] bg-[var(--down-dim)] text-xs text-down">
-        Analyst API unreachable.
+        The analyst service is briefly unavailable — check back in a minute.
       </p>
     );
   }
@@ -52,7 +52,7 @@ async function AnalystData() {
     return (
       <div className="card p-5 text-xs text-muted">
         No analysis yet. Click <span className="text-ink-soft">Generate fresh analysis</span> —
-        the graph gathers all deterministic evidence first, then calls the LLM once (cached).
+        we gather all the evidence first, then the AI writes the analysis from it.
       </div>
     );
   }
@@ -68,11 +68,10 @@ async function AnalystData() {
                 : "bg-white/[0.06] text-muted"
             }`}
           >
-            {res.status === "llm" ? `LLM: ${res.model}` : "DETERMINISTIC FALLBACK"}
+            {res.status === "llm" ? "AI-written analysis" : "Rules-based analysis (AI briefly unavailable)"}
           </span>
           <span className="num text-[10px] text-faint">
-            prompt {res.prompt_version} · {res.generated_at?.slice(0, 16).replace("T", " ")}Z
-            {res.cache_hit ? " · cache hit" : ""}
+            generated {res.generated_at?.slice(0, 16).replace("T", " ")} UTC
           </span>
         </div>
         <p className="mt-3 text-sm leading-relaxed text-ink-soft">{res.summary}</p>
@@ -109,7 +108,7 @@ async function AnalystData() {
       {"risk" in res && res.risk != null && (
         <div className="card p-5">
           <h3 className="card-title text-muted">
-            Risk constraints (deterministic Python — Phase 8 builds on these)
+            Built-in safety rules
           </h3>
           <dl className="mt-2 grid grid-cols-2 gap-2 num text-[11px] md:grid-cols-4">
             {Object.entries(res.risk)
@@ -142,7 +141,7 @@ export default function AnalystPage() {
           <div>
             <h1 className="page-title">AI Market Analyst</h1>
             <p className="mt-1 text-xs text-muted">
-              Phase 7 — LangGraph evidence synthesis · LLM narrates, Python computes every number
+              Our AI explains the reasoning — every number it quotes is computed by the engine first
             </p>
           </div>
         </header>
