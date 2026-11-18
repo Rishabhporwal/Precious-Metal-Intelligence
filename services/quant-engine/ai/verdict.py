@@ -279,6 +279,27 @@ def build_verdict(
             "supports": report.supports,
             "resistances": report.resistances,
         }, report.pdh, report.pdl, atr_val, direction)
+        # SCALP GEOMETRY: same zone, tighter stop/targets. Swing stops span the
+        # whole trend (structure + 0.8×ATR); scalps risk 0.4×ATR beyond the
+        # entry zone and target 1R/2R of that. Deterministic, same engine.
+        if atr_val and plan.get("entry_low") is not None and plan.get("entry_high") is not None:
+            scalp_r = 0.4 * atr_val
+            if direction == "bullish":
+                s_stop = plan["entry_low"] - scalp_r
+                s_entry = (plan["entry_low"] + plan["entry_high"]) / 2
+                s_t1, s_t2 = s_entry + scalp_r, s_entry + 2 * scalp_r
+            else:
+                s_stop = plan["entry_high"] + scalp_r
+                s_entry = (plan["entry_low"] + plan["entry_high"]) / 2
+                s_t1, s_t2 = s_entry - scalp_r, s_entry - 2 * scalp_r
+            plan["scalp"] = {
+                "entry_low": plan["entry_low"],
+                "entry_high": plan["entry_high"],
+                "stop": round(s_stop, 2),
+                "t1": round(s_t1, 2),
+                "t2": round(s_t2, 2),
+                "risk_per_oz": round(abs(s_stop - s_entry), 2),
+            }
 
     invalidations: list[str] = []
     if plan:

@@ -11,6 +11,14 @@ interface VerdictPlan {
   t2?: number;
   risk_per_oz?: number;
   atr14?: number;
+  scalp?: {
+    entry_low?: number;
+    entry_high?: number;
+    stop?: number;
+    t1?: number;
+    t2?: number;
+    risk_per_oz?: number;
+  };
 }
 
 interface EvidenceSplit {
@@ -253,7 +261,7 @@ export async function TodayPlan() {
         {/* THE TRADE PLAN — only when we actually have one */}
         {hasPlan ? (
           <div className="mt-6 rounded-xl border border-line-subtle bg-raised p-4 sm:p-5">
-            <div className="card-title">If you trade, here&apos;s the plan</div>
+            <div className="card-title">If you swing trade (hold 1–3 days), here&apos;s the plan</div>
             <div className="mt-2">
               <PlanRow
                 label="Get in around"
@@ -286,7 +294,40 @@ export async function TodayPlan() {
               </p>
             )}
           </div>
-        ) : (
+        ) : null}
+
+        {hasPlan && plan.scalp?.stop != null && plan.scalp.t1 != null && (
+          <div className="mt-3 rounded-xl border border-line-subtle bg-raised p-4 sm:p-5">
+            <div className="card-title">If you scalp (tighter, faster — same direction)</div>
+            <div className="mt-2">
+              <PlanRow
+                label="Get in around"
+                value={
+                  plan.scalp.entry_low != null && plan.scalp.entry_high != null
+                    ? `${usd(plan.scalp.entry_low)} – ${usd(plan.scalp.entry_high)}`
+                    : "—"
+                }
+              />
+              <PlanRow
+                label="Give up if it hits (stop loss)"
+                value={usd(plan.scalp.stop)}
+                tone="text-down"
+              />
+              <PlanRow label="First goal (1R)" value={plan.scalp.t1 != null ? usd(plan.scalp.t1) : "—"} tone="text-up" />
+              <PlanRow label="Bigger goal (2R)" value={plan.scalp.t2 != null ? usd(plan.scalp.t2) : "—"} tone="text-up" />
+            </div>
+            <p className="mt-2.5 text-[11.5px] leading-relaxed text-muted">
+              <span className="font-semibold text-ink">Scalp risk:</span> ~
+              {usd(plan.scalp.risk_per_oz ?? 0)}/oz — at the 1% rule that&apos;s roughly{" "}
+              <span className="num font-semibold text-ink">
+                {(10 / Math.max(1, plan.scalp.risk_per_oz ?? 1)).toFixed(2)} oz
+              </span>{" "}
+              with a $1,000 account. Exits are quick: this trade should resolve in hours, not days.
+            </p>
+          </div>
+        )}
+
+        {!hasPlan && (
           <div className="mt-6 rounded-xl border border-line-subtle bg-raised p-4 sm:p-5">
             <div className="card-title">No trade recommended right now</div>
             <p className="mt-1.5 text-[12.5px] leading-relaxed text-muted">
