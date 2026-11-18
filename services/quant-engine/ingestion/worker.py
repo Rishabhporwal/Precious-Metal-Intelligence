@@ -152,6 +152,24 @@ def _log_staleness(instruments: list[dict]) -> None:
                 )
 
 
+def _newest_1min_age(instrument_id: int) -> float | None:
+    """Minutes since the newest stored 1min candle. None on any failure."""
+    try:
+        from app.db import get_pool
+        from app.marketdata import store
+
+        with get_pool().connection() as conn:
+            rows = store.get_candles(conn, instrument_id, CandleInterval.MIN_1, limit=1)
+        if not rows:
+            return None
+        ts = rows[-1]["market_ts"]
+        if getattr(ts, "tzinfo", None) is None:
+            ts = ts.replace(tzinfo=UTC)
+        return (datetime.now(UTC) - ts).total_seconds() / 60
+    except Exception:  # noqa: BLE001
+        return None
+
+
 def run() -> None:
     logger.info("ingestion worker starting")
     stop = False
@@ -203,6 +221,26 @@ def run() -> None:
                 if stop:
                     break
                 ingest_quote(provider, instrument, provider_id)
+                # SELF-HEAL: if the newest 1min candle is older than the poll
+                # cadence, the process was suspended (laptop sleep / VM pause).
+                # Backfill the gap immediately and scream if it was long.
+                try:
+                    _gap_minutes = _newest_1min_age(instrument["id"])
+                    if _gap_minutes is not None and _gap_minutes > 10:  # minutes — beyond the 5-min poll
+                        _backfill_start = datetime.now(UTC) - timedelta(minutes=_gap_minutes + 10)
+                        ingest_candles(
+                            provider, instrument, provider_id, CandleInterval.MIN_1,
+                            outputsize=500,
+                            start=_backfill_start,
+                        )
+                        if _gap_minutes > 120:
+                            logger.error(
+                                "STALE DATA healed: %s 1min candles were %s behind — "
+                                "process was likely suspended (host sleep). Gap backfilled.",
+                                instrument["symbol"], f"{_gap_minutes:.0f}min",
+                            )
+                except Exception as exc:  # noqa: BLE001
+                    logger.debug("self-heal check skipped: %s", exc)
                 if do_min:
                     # Refresh the most recent 1min candles (covers corrections too).
                     ingest_candles(
