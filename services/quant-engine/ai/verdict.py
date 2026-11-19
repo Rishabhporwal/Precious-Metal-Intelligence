@@ -146,11 +146,48 @@ def _levels_from_structure(
     pdl: float | None,
     atr_val: float | None,
     direction: str,
+    recent_range: dict | None = None,
 ) -> dict:
     """Deterministic plan levels. Stop = structure side with an ATR floor; targets = R multiples."""
     supports = sorted((float(s["price"]) for s in sr.get("supports", [])), reverse=True)
     resistances = sorted(float(r["price"]) for r in sr.get("resistances", []))
     a = atr_val or max(price * 0.006, 5.0)  # conservative fallback
+
+    # CONTINUATION MODE: price has broken beyond every detected structure level
+    # (waterfall/ramp). The old pullback-entry plan would print targets already
+    # consumed by price. Project fresh levels from the live ATR instead.
+    recent = recent_range or {}
+    r_high = recent.get("high")
+    r_low = recent.get("low")
+    if direction == "bearish" and (not supports or supports[0] > price * 1.005):
+        # price below all known supports — continuation short at/near market
+        stop = (r_high or price + 0.5 * a) + 0.4 * a
+        entry_high = min(price + 0.15 * a, stop - 0.3 * a)
+        entry_low = price - 0.15 * a
+        plan = {
+            "entry_low": round(entry_low, 2),
+            "entry_high": round(entry_high, 2),
+            "stop": round(stop, 2),
+            "t1": round(price - 1.0 * a, 2),
+            "t2": round(price - 2.0 * a, 2),
+            "risk_per_oz": round(abs(stop - (entry_low + entry_high) / 2), 2),
+            "mode": "continuation",
+        }
+        return plan
+    if direction == "bullish" and (not resistances or resistances[-1] < price * 0.995):
+        stop = (r_low or price - 0.5 * a) - 0.4 * a
+        entry_high = price + 0.15 * a
+        entry_low = max(price - 0.15 * a, stop + 0.3 * a)
+        plan = {
+            "entry_low": round(entry_low, 2),
+            "entry_high": round(entry_high, 2),
+            "stop": round(stop, 2),
+            "t1": round(price + 1.0 * a, 2),
+            "t2": round(price + 2.0 * a, 2),
+            "risk_per_oz": round(abs(stop - (entry_low + entry_high) / 2), 2),
+            "mode": "continuation",
+        }
+        return plan
 
     if direction == "bullish":
         entry_candidates = [s for s in supports if s < price]
@@ -278,7 +315,10 @@ def build_verdict(
         plan = _levels_from_structure(quote_price, {
             "supports": report.supports,
             "resistances": report.resistances,
-        }, report.pdh, report.pdl, atr_val, direction)
+        }, report.pdh, report.pdl, atr_val, direction, recent_range={
+            "high": max((float(r["high"]) for r in hourly[-24:]), default=None),
+            "low": min((float(r["low"]) for r in hourly[-24:]), default=None),
+        })
         # SCALP GEOMETRY: same zone, tighter stop/targets. Swing stops span the
         # whole trend (structure + 0.8×ATR); scalps risk 0.4×ATR beyond the
         # entry zone and target 1R/2R of that. Deterministic, same engine.

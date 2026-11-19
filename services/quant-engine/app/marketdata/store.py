@@ -10,7 +10,10 @@ Rules implemented here:
 from __future__ import annotations
 
 import json
-from datetime import UTC, datetime
+import logging
+
+logger = logging.getLogger("marketdata")
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
 from psycopg import Connection
@@ -45,13 +48,23 @@ def record_observation(
 def upsert_quote(
     conn: Connection, instrument_id: int, provider_id: int, quote: NormalizedQuote
 ) -> None:
+    # The provider's /quote timestamp is unreliable (observed ~19h stale while
+    # the price itself was live). Stamp quotes with OUR ingest time — the price
+    # is what matters; the label is ours. Guard: reject future-stamped payloads.
+    now = _utc(datetime.now(UTC))
+    provider_ts = _utc(quote.market_ts)
+    if provider_ts is not None and provider_ts > now + timedelta(minutes=15):
+        logger.warning(
+            "quote future-stamped (%s > %s) — clamping to ingest time", provider_ts, now
+        )
+    market_ts = now if provider_ts is None or provider_ts < now - timedelta(hours=1) or provider_ts > now else provider_ts
     conn.execute(
         """
         INSERT INTO market_quotes
             (instrument_id, provider_id, price, bid, ask, market_ts)
         VALUES (%s, %s, %s, %s, %s, %s)
         """,
-        (instrument_id, provider_id, quote.price, quote.bid, quote.ask, _utc(quote.market_ts)),
+        (instrument_id, provider_id, quote.price, quote.bid, quote.ask, market_ts),
     )
 
 
