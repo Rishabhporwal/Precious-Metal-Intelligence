@@ -1,6 +1,6 @@
-"use client";
+import { STATUS_LABEL, fmtUsd } from "./predictionAuditShared";
 
-import { useEffect, useState } from "react";
+const API_INTERNAL_URL = process.env.API_INTERNAL_URL ?? "http://localhost:8000";
 
 interface Prediction {
   id: number;
@@ -12,9 +12,6 @@ interface Prediction {
   t2: number | null;
   status: string;
   created_at: string | null;
-  t1_hit_at: string | null;
-  t2_hit_at: string | null;
-  stopped_at: string | null;
   max_favorable: number | null;
   reason: string | null;
 }
@@ -31,46 +28,25 @@ interface Summary {
   t1_hit_rate: number | null;
 }
 
-const STATUS_LABEL: Record<string, { text: string; cls: string }> = {
-  pending: { text: "In progress", cls: "bg-blue-500/10 text-blue-500" },
-  hit_t1: { text: "T1 hit", cls: "bg-emerald-500/10 text-emerald-500" },
-  hit_t2: { text: "T1+T2 hit", cls: "bg-emerald-500/15 text-emerald-400" },
-  stopped: { text: "Stopped out", cls: "bg-red-500/10 text-red-500" },
-  stopped_pre_entry: { text: "Never filled", cls: "bg-amber-500/10 text-amber-500" },
-  superseded: { text: "Superseded", cls: "bg-zinc-500/10 text-zinc-400" },
-  expired: { text: "Expired", cls: "bg-zinc-500/10 text-zinc-400" },
-};
+async function getJson<T>(path: string): Promise<T | null> {
+  try {
+    const res = await fetch(`${API_INTERNAL_URL}${path}`, {
+      cache: "no-store",
+      signal: AbortSignal.timeout(15000),
+    });
+    if (!res.ok) return null;
+    return (await res.json()) as T;
+  } catch {
+    return null;
+  }
+}
 
-const fmt = (v: number | null | undefined) =>
-  v == null ? "—" : `$${v.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`;
-
-export default function PredictionAuditView() {
-  const [rows, setRows] = useState<Prediction[]>([]);
-  const [summary, setSummary] = useState<Summary | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    let alive = true;
-    (async () => {
-      try {
-        const [a, s] = await Promise.all([
-          fetch("/api/v1/predictions/audit?limit=50").then((r) => r.json()),
-          fetch("/api/v1/predictions/summary").then((r) => r.json()),
-        ]);
-        if (!alive) return;
-        setRows(a.predictions ?? []);
-        setSummary(s);
-      } finally {
-        if (alive) setLoading(false);
-      }
-    })();
-    return () => {
-      alive = false;
-    };
-  }, []);
-
-  if (loading) return <p className="text-muted">Loading prediction audit…</p>;
-
+export default async function PredictionAuditView() {
+  const [audit, summary] = await Promise.all([
+    getJson<{ predictions?: Prediction[] }>("/api/v1/predictions/audit?symbol=XAUUSD&limit=50"),
+    getJson<Summary>("/api/v1/predictions/summary?symbol=XAUUSD"),
+  ]);
+  const rows = audit?.predictions ?? [];
   const stats = summary
     ? [
         ["Predictions made", summary.total],
@@ -79,7 +55,6 @@ export default function PredictionAuditView() {
         ["Reached T2", summary.hit_t2],
         ["Stopped out", summary.stopped],
         ["Superseded", summary.superseded ?? 0],
-        ["Expired", summary.expired],
         ["T1 accuracy", summary.t1_hit_rate == null ? "—" : `${Math.round(summary.t1_hit_rate * 100)}%`],
       ]
     : [];
@@ -124,11 +99,11 @@ export default function PredictionAuditView() {
               </div>
 
               <div className="mt-2.5 grid grid-cols-2 gap-x-6 gap-y-1 sm:grid-cols-5">
-                <div><span className="text-[10.5px] uppercase tracking-wider text-faint">Entry</span><div className="text-[12.5px] text-ink">{fmt(p.entry[0])}–{fmt(p.entry[1])}</div></div>
-                <div><span className="text-[10.5px] uppercase tracking-wider text-faint">Stop</span><div className="text-[12.5px] text-ink">{fmt(p.stop)}</div></div>
-                <div><span className="text-[10.5px] uppercase tracking-wider text-faint">Target 1</span><div className="text-[12.5px] text-ink">{fmt(p.t1)}</div></div>
-                <div><span className="text-[10.5px] uppercase tracking-wider text-faint">Target 2</span><div className="text-[12.5px] text-ink">{fmt(p.t2)}</div></div>
-                <div><span className="text-[10.5px] uppercase tracking-wider text-faint">Best move</span><div className="text-[12.5px] text-ink">{p.max_favorable == null ? "—" : `${fmt(p.max_favorable)}/oz`}</div></div>
+                <div><span className="text-[10.5px] uppercase tracking-wider text-faint">Entry</span><div className="text-[12.5px] text-ink">{fmtUsd(p.entry[0])}–{fmtUsd(p.entry[1])}</div></div>
+                <div><span className="text-[10.5px] uppercase tracking-wider text-faint">Stop</span><div className="text-[12.5px] text-ink">{fmtUsd(p.stop)}</div></div>
+                <div><span className="text-[10.5px] uppercase tracking-wider text-faint">Target 1</span><div className="text-[12.5px] text-ink">{fmtUsd(p.t1)}</div></div>
+                <div><span className="text-[10.5px] uppercase tracking-wider text-faint">Target 2</span><div className="text-[12.5px] text-ink">{fmtUsd(p.t2)}</div></div>
+                <div><span className="text-[10.5px] uppercase tracking-wider text-faint">Best move</span><div className="text-[12.5px] text-ink">{p.max_favorable == null ? "—" : `${fmtUsd(p.max_favorable)}/oz`}</div></div>
               </div>
 
               {p.reason && (

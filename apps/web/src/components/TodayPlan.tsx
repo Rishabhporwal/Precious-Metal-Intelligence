@@ -237,7 +237,7 @@ export async function TodayPlan() {
   const dailyCloses = (daily?.candles ?? []).map((c) => Number(c.close)).filter(Number.isFinite);
   let contextLine: string | null = null;
   if (price != null && dailyCloses.length >= 5) {
-    const n = Math.min(5, dailyCloses.length - 1);
+    const n = Math.min(7, dailyCloses.length - 1);
     const ref = dailyCloses[dailyCloses.length - 1 - n];
     const chg = ((price - ref) / ref) * 100;
     if (Math.abs(chg) >= 1)
@@ -430,23 +430,26 @@ export async function TodayPlan() {
               </li>
             ))}
           </ul>
-          {contextLine && (
-            <p className="mt-3 text-[12px] leading-relaxed text-ink-soft">{contextLine}</p>
-          )}
-          {verdict?.narrative && (
-            <div className="mt-3 rounded-lg border border-line-subtle bg-canvas p-3">
-              <div className="text-[11px] font-semibold uppercase tracking-widest text-faint">
-                Full analysis
-              </div>
-              <p className="mt-1.5 text-[12px] leading-relaxed text-muted">{verdict.narrative}</p>
-            </div>
-          )}
-          {flipLine && (
-            <p className="mt-3 text-[12px] leading-relaxed text-muted">
-              <span className="font-semibold text-ink">What would change our mind:</span> {flipLine}
-            </p>
-          )}
         </details>
+
+        {(contextLine || verdict?.narrative || flipLine) && (
+          <div className="mt-4 rounded-lg border border-line-subtle bg-canvas p-4">
+            <div className="text-[11px] font-semibold uppercase tracking-widest text-faint">
+              Our analysis
+            </div>
+            {contextLine && (
+              <p className="mt-2 text-[12.5px] font-medium leading-relaxed text-ink">{contextLine}</p>
+            )}
+            {verdict?.narrative && (
+              <p className="mt-2 text-[12.5px] leading-relaxed text-muted">{verdict.narrative}</p>
+            )}
+            {flipLine && (
+              <p className="mt-2 border-t border-line-subtle pt-2 text-[12px] leading-relaxed text-muted">
+                <span className="font-semibold text-ink">What would change our mind:</span> {flipLine}
+              </p>
+            )}
+          </div>
+        )}
 
         <p className="mt-4 text-[10.5px] leading-relaxed text-faint">
           Built from real market data. Information only — not financial advice. Never trade more
