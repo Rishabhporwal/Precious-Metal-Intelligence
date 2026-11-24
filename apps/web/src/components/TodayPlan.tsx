@@ -41,13 +41,14 @@ interface Verdict {
   score?: number;
   evidence_split?: EvidenceSplit;
   drivers?: VerdictDriver[];
+  narrative?: string | null;
+  invalidations?: string[];
   as_of: string;
   plan?: VerdictPlan;
   key_levels?: { supports?: number[]; resistances?: number[]; prev_day_low?: number; prev_day_high?: number };
   trend_daily?: { trend?: string };
   trend_hourly?: { trend?: string };
   event_risk?: { veto?: boolean; events?: { release: string; date: string }[] };
-  narrative?: string | null;
 }
 
 interface Signal {
@@ -214,11 +215,14 @@ function PlanRow({ label, value, tone }: { label: string; value: string; tone?: 
 }
 
 export async function TodayPlan() {
-  const [verdict, signal, quote, news] = await Promise.all([
+  const [verdict, signal, quote, news, daily] = await Promise.all([
     getJson<Verdict>("/api/v1/verdict/latest?symbol=XAUUSD"),
     getJson<Signal>("/api/v1/signals/latest?symbol=XAUUSD&interval=1h"),
     getJson<{ price: string }>("/api/v1/markets/XAUUSD/quote"),
     getJson<{ articles?: NewsArticle[] }>("/api/v1/macro/news?limit=30"),
+    getJson<{ candles: { close: string; market_ts: string }[] }>(
+      "/api/v1/markets/XAUUSD/candles?interval=1day&limit=8",
+    ),
   ]);
 
   const { headline, trade, tone } = callSentence(verdict, signal);
@@ -228,6 +232,18 @@ export async function TodayPlan() {
   const supports = verdict?.key_levels?.supports ?? [];
   const resistances = verdict?.key_levels?.resistances ?? [];
   const why = verdict ? whyBullets(verdict, signal, news?.articles ?? null) : [];
+
+  // deterministic context: where we are in the move
+  const dailyCloses = (daily?.candles ?? []).map((c) => Number(c.close)).filter(Number.isFinite);
+  let contextLine: string | null = null;
+  if (price != null && dailyCloses.length >= 5) {
+    const n = Math.min(5, dailyCloses.length - 1);
+    const ref = dailyCloses[dailyCloses.length - 1 - n];
+    const chg = ((price - ref) / ref) * 100;
+    if (Math.abs(chg) >= 1)
+      contextLine = `Gold has ${chg < 0 ? "fallen" : "risen"} ${Math.abs(chg).toFixed(1)}% over the last ${n} days${Math.abs(chg) >= 8 ? " — an unusually fast move" : ""}.`;
+  }
+  const flipLine = (verdict?.invalidations ?? [])[0] ?? null;
 
   return (
     <div className="space-y-4">
@@ -414,6 +430,22 @@ export async function TodayPlan() {
               </li>
             ))}
           </ul>
+          {contextLine && (
+            <p className="mt-3 text-[12px] leading-relaxed text-ink-soft">{contextLine}</p>
+          )}
+          {verdict?.narrative && (
+            <div className="mt-3 rounded-lg border border-line-subtle bg-canvas p-3">
+              <div className="text-[11px] font-semibold uppercase tracking-widest text-faint">
+                Full analysis
+              </div>
+              <p className="mt-1.5 text-[12px] leading-relaxed text-muted">{verdict.narrative}</p>
+            </div>
+          )}
+          {flipLine && (
+            <p className="mt-3 text-[12px] leading-relaxed text-muted">
+              <span className="font-semibold text-ink">What would change our mind:</span> {flipLine}
+            </p>
+          )}
         </details>
 
         <p className="mt-4 text-[10.5px] leading-relaxed text-faint">

@@ -18,6 +18,7 @@ from ai.verdict import build_verdict
 from app.db import get_pool
 from app.macrodata import gld_holdings_summary, latest_news, upcoming_events
 from app.marketdata import store
+from app.predictions import snapshot_plan
 from providers.base import CandleInterval
 from strategies.engine import recent_detections
 
@@ -165,6 +166,12 @@ async def generate(symbol: str = Query(default="XAUUSD")) -> dict:
 
     narrative, llm_meta = await _narrative(v)
     vid = _persist(v, narrative, {**(llm_meta or {}), "evidence_split": v.get("evidence_split")})
+    try:
+        snapshot_plan(v, vid)
+    except Exception as exc:  # noqa: BLE001 — audit failure must not break the verdict
+        import logging
+
+        logging.getLogger("verdict").warning("prediction snapshot failed: %s", exc)
     return {"verdict_id": vid, **v, "narrative": narrative, "llm_meta": llm_meta}
 
 

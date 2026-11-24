@@ -186,6 +186,15 @@ def sync_daily_brief() -> None:
 
 
 
+def sync_predictions() -> None:
+    """Grade pending prediction audits against actual candles."""
+    import httpx
+
+    r = httpx.post("http://localhost:8001/v1/predictions/grade", timeout=120)
+    if r.status_code == 200:
+        logger.info("prediction audit: %s graded", r.json().get("graded", 0))
+
+
 def sync_gld() -> None:
     """Daily GLD ETF tonnage (physical demand) — SPDR archive, no key needed."""
 
@@ -228,6 +237,10 @@ def run() -> None:
         sync_gld()
     except Exception as exc:  # noqa: BLE001 — a failed archive fetch must not kill boot
         logger.warning("gld boot sync failed: %s", exc)
+    try:
+        sync_predictions()
+    except Exception as exc:  # noqa: BLE001
+        logger.warning("prediction grading failed: %s", exc)
 
     while True:
         time.sleep(30)

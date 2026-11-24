@@ -12,6 +12,7 @@ from .api import (
     missed_ep,
     news_events_ep,
     performance,
+    predictions_ep,
     quant_stats,
     signals,
     strategies,
@@ -37,6 +38,7 @@ app.include_router(performance.router)
 app.include_router(signals.router)
 app.include_router(intelligence.router)
 app.include_router(missed_ep.router)
+app.include_router(predictions_ep.router)
 app.include_router(news_events_ep.router)
 app.include_router(backtests.router)
 app.include_router(dataquality_ep.router)

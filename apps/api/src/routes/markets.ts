@@ -125,6 +125,19 @@ export async function registerMarketRoutes(app: FastifyInstance): Promise<void> 
     },
   );
 
+  app.get<{ Querystring: { symbol?: string } }>(
+    "/api/v1/predictions/audit",
+    async (request, reply) => {
+      const symbol = ((request.query?.symbol as string) ?? "XAUUSD").toUpperCase();
+    const result = await proxy(app, `/v1/predictions/audit?symbol=${symbol}`);
+    return reply.code(result.statusCode).send(result.body);
+  });
+
+  app.get("/api/v1/predictions/summary", async (_request, reply) => {
+    const result = await proxy(app, "/v1/predictions/summary?symbol=XAUUSD");
+    return reply.code(result.statusCode).send(result.body);
+  });
+
   app.get("/api/v1/strategies", async (_request, reply) => {
     const result = await proxy(app, "/v1/strategies");
     return reply.code(result.statusCode).send(result.body);
