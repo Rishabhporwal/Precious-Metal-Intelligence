@@ -278,6 +278,29 @@ def build_verdict(
     h_closes = [float(r["close"]) for r in hourly]
     report = full_structure_report(highs, lows, closes, daily, hourly)
 
+    # RECENT HOURLY SWINGS: the daily-scale structure report lags fast markets —
+    # during the Nov-2026 waterfall it kept reporting levels the crash had
+    # already broken. Merge confirmed swing highs/lows from the last 72h of
+    # hourly candles so key_levels reflect current structure.
+    h_highs = [float(r["high"]) for r in hourly]
+    h_lows = [float(r["low"]) for r in hourly]
+    if len(h_highs) >= 10:
+        from indicators.structure import detect_swings
+
+        h_swings = detect_swings(h_highs, h_lows)
+        cutoff = datetime.now(UTC) - timedelta(hours=72)
+        for sw in h_swings:
+            ts = hourly[sw.index]["market_ts"] if sw.index < len(hourly) else None
+            if ts is None:
+                continue
+            if getattr(ts, "tzinfo", None) is None:
+                ts = ts.replace(tzinfo=UTC)
+            if ts < cutoff:
+                continue
+            target = report.resistances if sw.kind == "high" else report.supports
+            if not any(abs(float(x.get("price", 0)) - sw.price) < 1.0 for x in target):
+                target.append({"price": sw.price, "source": "hourly_swing"})
+
     # multi-timeframe trend: reuse structure trend for daily-swing view, plus a
     # simple hourly EMA alignment for the short side
     trend_daily = report.trend
@@ -376,8 +399,15 @@ def build_verdict(
         "plan": plan,
         "invalidations": invalidations,
         "key_levels": {
-            "supports": [round(float(s["price"]), 2) for s in report.supports][:3],
-            "resistances": [round(float(r["price"]), 2) for r in report.resistances][:3],
+            # nearest-to-price first: supports below price (descending),
+            # resistances above price (ascending)
+            "supports": sorted(
+                (round(float(s["price"]), 2) for s in report.supports if float(s["price"]) < quote_price),
+                reverse=True,
+            )[:3],
+            "resistances": sorted(
+                (round(float(r["price"]), 2) for r in report.resistances if float(r["price"]) > quote_price),
+            )[:3],
             "prev_day_high": round(report.pdh, 2) if report.pdh else None,
             "prev_day_low": round(report.pdl, 2) if report.pdl else None,
             "prev_week_high": round(report.pwh, 2) if report.pwh else None,
