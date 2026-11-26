@@ -30,6 +30,7 @@ interface Candle {
   sell_volume: string | null;
 }
 
+
 function theme() {
   const css = getComputedStyle(document.documentElement);
   const v = (n: string, fb: string) => css.getPropertyValue(n).trim() || fb;
@@ -47,22 +48,17 @@ function theme() {
 
 function CryptoChart({ symbol }: { symbol: string }) {
   const ref = useRef<HTMLDivElement>(null);
+  const chartRef = useRef<Vela | null>(null);
+  const [chartError, setChartError] = useState<string | null>(null);
+
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
     let dead = false;
-    const chart = new Vela(el, {
-      symbol: `${symbol}USDT`,
-      timeframe: "60",
-      theme: theme() as never,
-      bars: 120,
-    });
-    chart.drawings.showToolbar(false);
-    chart.data.registerProvider("pmi-crypto", {
-      async getBars(ticker: string, timeframe: string, range?: { from?: number; limit?: number }) {
-        const interval = timeframe === "60" ? "1h" : timeframe === "1D" ? "1day" : "1h";
+    const load = async () => {
+      try {
         const res = await fetch(`${API_URL}/api/v1/crypto/candles?symbol=${symbol}&limit=200`);
-        if (!res.ok) return [];
+        if (!res.ok) throw new Error(`candles HTTP ${res.status}`);
         const d = (await res.json()) as { candles: Candle[] };
         const bars = d.candles
           .map((c) => ({
@@ -70,29 +66,61 @@ function CryptoChart({ symbol }: { symbol: string }) {
             open: Number(c.open), high: Number(c.high),
             low: Number(c.low), close: Number(c.close),
           }))
-          .filter((b) => Number.isFinite(b.time) && (!range?.from || b.time >= range.from))
+          .filter((b) => Number.isFinite(b.time) && b.close > 0)
           .sort((a, b) => a.time - b.time);
-        return ticker.endsWith("USDT") ? bars : [];
-      },
-      async listSymbols() {
-        return SYMBOLS.map((s) => ({ ticker: `${s}USDT`, description: `${s} perpetual` }));
-      },
-    });
-    chart.ready().catch(() => undefined);
+        if (dead) return;
+        if (!bars.length) {
+          setChartError("no candles stored yet");
+          return;
+        }
+        setChartError(null);
+        const existing = chartRef.current;
+        if (existing) {
+          (existing as unknown as { setMarket: (m: Record<string, unknown>) => void }).setMarket({
+            data: bars,
+          });
+          return;
+        }
+        const chart = new Vela(el, {
+          data: bars,
+          timeframe: "60",
+          theme: theme() as never,
+          bars: bars.length,
+        });
+        chartRef.current = chart;
+        chart.drawings.showToolbar(false);
+        await chart.ready();
+      } catch (e) {
+        if (!dead) setChartError(e instanceof Error ? e.message : String(e));
+      }
+    };
+    void load();
+    const t = setInterval(load, 60_000);
     return () => {
       dead = true;
+      clearInterval(t);
+      const chart = chartRef.current;
+      chartRef.current = null;
       try {
-        (chart as unknown as { destroy?: () => void }).destroy?.();
+        (chart as unknown as { destroy?: () => void })?.destroy?.();
       } catch {
         try {
-          (chart as unknown as { remove?: () => void }).remove?.();
+          (chart as unknown as { remove?: () => void })?.remove?.();
         } catch {
           /* noop */
         }
       }
     };
   }, [symbol]);
-  return <div ref={ref} className="h-[380px] w-full" />;
+
+  return (
+    <div className="relative">
+      <div ref={ref} className="h-[380px] w-full" />
+      {chartError && (
+        <div className="absolute inset-x-0 bottom-2 text-center text-[11px] text-down">{chartError}</div>
+      )}
+    </div>
+  );
 }
 
 const compact = (v: number) =>

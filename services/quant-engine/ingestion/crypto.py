@@ -89,16 +89,21 @@ def sync_candles() -> int:
 
 
 def sync_deriv() -> int:
+    """OI (series close), funding (rateClose) and liquidations per side."""
     if not _configured():
         return 0
     n = 0
     for coin in SYMBOLS:
         try:
-            oi = om.parse_scalar(om.get_points(om.OPEN_INTEREST, coin, "HOUR", DERIV_LOOKBACK), ("openInterest", "oi", "value", "v"))
-            funding = om.parse_scalar(om.get_points(om.FUNDING, coin, "HOUR", DERIV_LOOKBACK), ("fundingRate", "funding_rate", "value", "v"))
+            oi_body = om.get_points(om.OPEN_INTEREST, coin, "HOUR", DERIV_LOOKBACK)
+            oi = [{"market_ts": ts, "value": point.get("close")}
+                  for ts, point in om.series_points(oi_body, None)]
+            funding = [{"market_ts": ts, "value": point.get("rateClose")}
+                       for ts, point in om.series_points(om.get_points(om.FUNDING, coin, "HOUR", DERIV_LOOKBACK), None)]
             liq = {}
-            for side, key in (("buy", ("buyNotional", "buy_notional", "buy")), ("sell", ("sellNotional", "sell_notional", "sell"))):
-                liq[side] = om.parse_scalar(om.get_points(om.LIQUIDATIONS, coin, "HOUR", LIQ_LOOKBACK), (key,))
+            for side in ("BUY", "SELL"):
+                liq[side.lower()] = [{"market_ts": ts, "value": point.get("liquidations")}
+                                     for ts, point in om.series_points(om.get_points(om.LIQUIDATIONS, coin, "HOUR", LIQ_LOOKBACK), side)]
             n += _upsert_deriv(coin, oi, funding, liq)
         except Exception as exc:  # noqa: BLE001
             logger.warning("crypto deriv %s failed: %s", coin, exc)

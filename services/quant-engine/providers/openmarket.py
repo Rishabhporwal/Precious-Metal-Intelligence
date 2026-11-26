@@ -5,6 +5,11 @@ Crypto-only: BTC/ETH/SOL per-side trade candles (aggressive buys vs sells),
 open interest, funding rates and liquidations. The key lives in
 OPENMARKET_API_KEY; without it everything degrades honestly (no data, no
 fabrication).
+
+Response envelope (verified against the live API):
+  {"series": [{"id": {..., "side": "BUY"|"SELL"|absent},
+               "points": [{"Point": {...}, ...}, ...]}, ...]}
+All timestamps are {"s": epoch_seconds} objects.
 """
 
 from __future__ import annotations
@@ -18,7 +23,7 @@ BASE_URL = "https://api.openmarket.xyz/v1/points"
 EXCHANGE = "BINANCE_FUTURES"  # single venue keeps every query at 1x weight
 SYMBOLS = ("BTC", "ETH", "SOL")
 
-CANDLES = "TRADE_AGG"  # per-side: aggressive buys vs sells
+CANDLES = "TRADE_AGG"  # per-side: one query returns BUY and SELL series
 OPEN_INTEREST = "OPEN_INTEREST_AGG"
 FUNDING = "FUNDING_RATE_AGG"
 LIQUIDATIONS = "LIQUIDATION_AGG"
@@ -41,8 +46,8 @@ def get_points(
     interval: str,
     lookback_seconds: int,
     timeout: float = 30.0,
-) -> list[dict]:
-    """One API call; returns the raw point list. 1x weight for all v1 types."""
+) -> dict:
+    """One API call; returns the raw response body (1x weight for all v1 types)."""
     now = int(datetime.now(UTC).timestamp())
     params = {
         "type": data_type,
@@ -50,71 +55,59 @@ def get_points(
         "rawSymbol": f"{coin}USDT",
         "interval": interval,
         "from": now - lookback_seconds,
-        "period": 3600,
+        "period": lookback_seconds,  # period = the window length, not bar spacing
     }
     r = httpx.get(BASE_URL, params=params, headers={"X-OpenMarket-Key": api_key()}, timeout=timeout)
     r.raise_for_status()
-    body = r.json()
-    # the docs don't fix a response envelope — accept the common shapes
-    if isinstance(body, list):
-        return body
-    for key in ("points", "data", "results", "values"):
-        if isinstance(body.get(key), list):
-            return body[key]
-    return []
+    return r.json()
 
 
-def _num(v) -> float | None:
-    if v is None:
-        return None
-    try:
-        return float(v)
-    except (TypeError, ValueError):
-        return None
-
-
-def parse_candles(points: list[dict]) -> list[dict]:
-    """Normalize per-side candles; shape-tolerant (time/openTime/ts fields)."""
-    out = []
-    for p in points:
-        ts = p.get("time") or p.get("t") or p.get("openTime") or p.get("ts") or p.get("timestamp")
-        if ts is None:
+def series_points(body: dict, side: str | None = None) -> list[tuple[datetime, dict]]:
+    """Flatten the envelope to (timestamp, fields) for one side (or the sideless series)."""
+    out: list[tuple[datetime, dict]] = []
+    for series in body.get("series", []):
+        sid = series.get("id") or {}
+        if side is not None and sid.get("side") != side:
             continue
-        ts = int(ts)
-        if ts > 1e12:  # ms → s
-            ts //= 1000
-        out.append(
-            {
-                "market_ts": datetime.fromtimestamp(ts, tz=UTC),
-                "open": _num(p.get("open") or p.get("o")),
-                "high": _num(p.get("high") or p.get("h")),
-                "low": _num(p.get("low") or p.get("l")),
-                "close": _num(p.get("close") or p.get("c")),
-                "buy_volume": _num(p.get("buyVolume") or p.get("buy_volume") or p.get("buyVol") or p.get("buy")),
-                "sell_volume": _num(p.get("sellVolume") or p.get("sell_volume") or p.get("sellVol") or p.get("sell")),
-            }
-        )
-    out = [b for b in out if b["open"] is not None and b["close"] is not None]
+        if side is None and sid.get("side"):
+            continue
+        for p in series.get("points", []):
+            point = p.get("Point") or {}
+            ts = (point.get("timestamp") or {}).get("s")
+            if ts is None:
+                continue
+            out.append((datetime.fromtimestamp(int(ts), tz=UTC), point))
+    out.sort(key=lambda x: x[0])
+    return out
+
+
+def parse_candles(body: dict) -> list[dict]:
+    """Merge the BUY and SELL series into one candle list with side volumes."""
+    bars: dict[datetime, dict] = {}
+    for ts, point in series_points(body, "BUY"):
+        bars[ts] = {
+            "market_ts": ts,
+            "open": point.get("open"), "high": point.get("high"),
+            "low": point.get("low"), "close": point.get("close"),
+            "buy_volume": point.get("volume"), "sell_volume": None,
+        }
+    for ts, point in series_points(body, "SELL"):
+        bar = bars.setdefault(ts, {"market_ts": ts, "open": None, "high": None,
+                                   "low": None, "close": None, "buy_volume": None,
+                                   "sell_volume": None})
+        for k in ("open", "high", "low", "close"):
+            if bar[k] is None:
+                bar[k] = point.get(k)
+        bar["sell_volume"] = point.get("volume")
+    out = [b for b in bars.values() if b["close"] is not None]
     out.sort(key=lambda b: b["market_ts"])
     return out
 
 
-def parse_scalar(points: list[dict], value_keys: tuple[str, ...]) -> list[dict]:
-    out = []
-    for p in points:
-        ts = p.get("time") or p.get("t") or p.get("ts") or p.get("timestamp")
-        if ts is None:
-            continue
-        ts = int(ts)
-        if ts > 1e12:
-            ts //= 1000
-        value = None
-        for k in value_keys:
-            if p.get(k) is not None:
-                value = _num(p.get(k))
-                break
-        if value is None:
-            continue
-        out.append({"market_ts": datetime.fromtimestamp(ts, tz=UTC), "value": value})
-    out.sort(key=lambda b: b["market_ts"])
-    return out
+def parse_scalar(body: dict, value_keys: tuple[str, ...]) -> list[dict]:
+    return [
+        {"market_ts": ts, "value": point[k]}
+        for ts, point in series_points(body, None)
+        for k in (next((k for k in value_keys if point.get(k) is not None), None),)
+        if k is not None
+    ]
