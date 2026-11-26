@@ -158,6 +158,22 @@ const ageOf = (ts: string | null): string => {
   return `${Math.round(mins / 1440)}d ago`;
 };
 
+function resolveVelaTheme(): Record<string, string> {
+  if (typeof document === "undefined") return { theme: "dark" };
+  const css = getComputedStyle(document.documentElement);
+  const v = (name: string, fb: string) => css.getPropertyValue(name).trim() || fb;
+  const dark = document.documentElement.classList.contains("dark");
+  return {
+    background: v("--bg-elev", dark ? "#141821" : "#ffffff"),
+    textColor: v("--chart-text", "#6d7480"),
+    gridColor: v("--chart-grid", dark ? "rgba(255,255,255,0.03)" : "rgba(20,30,50,0.06)"),
+    borderColor: v("--line", dark ? "rgba(255,255,255,0.08)" : "rgba(20,30,50,0.1)"),
+    upColor: v("--chart-up", "#059669"),
+    downColor: v("--chart-down", "#e11d48"),
+    fontFamily: 'var(--font-geist-mono), ui-monospace, SFMono-Regular, monospace',
+  };
+}
+
 export function StrategyLabView() {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<Vela | null>(null);
@@ -184,7 +200,7 @@ export function StrategyLabView() {
     const chart = new Vela(el, {
       symbol: "XAUUSD",
       timeframe: VELA_TF["1h"],
-      theme: "dark",
+      theme: resolveVelaTheme() as never,
       bars: 400,
     });
     chartRef.current = chart;
@@ -306,11 +322,13 @@ export function StrategyLabView() {
     const ms = (ts: string) => new Date(ts).getTime();
 
     // detection arrows
-    for (const d of selectedDetections.slice(-60)) {
+    for (const d of selectedDetections.slice(-14)) {
       const price = Object.values(d.levels).find((v) => typeof v === "number") ?? null;
       addLocked(d.direction === "bullish" ? "arrowmarkup" : "arrowmarkdown", {
         paneId: "price",
+        size: "small",
         anchors: [{ time: ms(d.anchor_time), price: price ?? undefined }],
+        props: { size: "small" },
       });
     }
 
@@ -373,21 +391,8 @@ export function StrategyLabView() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
             />
-            <div className="mt-2 flex items-center gap-1.5">
-              {TIMEFRAMES.map((t) => (
-                <button
-                  key={t.interval}
-                  onClick={() => setTf(t.interval)}
-                  className={`rounded-md px-2 py-0.5 text-[11.5px] font-medium transition-all ${
-                    tf === t.interval
-                      ? "bg-gold-dim text-gold-bright"
-                      : "text-muted hover:bg-black/5 hover:text-ink dark:hover:bg-white/5"
-                  }`}
-                >
-                  {t.label}
-                </button>
-              ))}
-              <span className="ml-auto text-[10.5px] text-faint">{filtered.length} of {strategies.length} strategies</span>
+            <div className="mt-2 text-[10.5px] uppercase tracking-wider text-faint">
+              {filtered.length} of {strategies.length} strategies
             </div>
           </div>
           <div className="flex-1 overflow-y-auto">
@@ -402,19 +407,34 @@ export function StrategyLabView() {
                     setSelected(s.strategy_id);
                     setFocused(null);
                   }}
-                  className={`block w-full border-b border-line-subtle px-3 py-2.5 text-left transition-colors ${
-                    active ? "bg-gold-dim/40" : "hover:bg-black/5 dark:hover:bg-white/5"
+                  className={`relative block w-full border-b border-line-subtle px-3 py-2.5 pl-4 text-left transition-colors ${
+                    active ? "bg-gold-dim" : "hover:bg-black/[0.03] dark:hover:bg-white/[0.04]"
                   }`}
                 >
+                  {active && <span className="absolute left-0 top-0 h-full w-[3px] bg-gold" />}
                   <div className="flex items-center justify-between gap-2">
                     <span className={`text-[12.5px] font-medium ${active ? "text-ink" : "text-muted"}`}>
                       {s.name}
                     </span>
-                    <span className={`pill ${chip.cls} shrink-0`}>{chip.label}</span>
+                    <span
+                      className={`h-1.5 w-1.5 shrink-0 rounded-full ${
+                        v?.verdict === "BULLISH"
+                          ? "bg-up"
+                          : v?.verdict === "BEARISH"
+                            ? "bg-down"
+                            : v?.verdict === "WAITING_FOR_CONFIRMATION"
+                              ? "bg-warn"
+                              : "bg-faint/40"
+                      }`}
+                      title={chip.label}
+                    />
                   </div>
-                  {v?.last_detection && (
-                    <div className="mt-0.5 text-[10.5px] text-faint">last signal {ageOf(v.last_detection)}</div>
-                  )}
+                  <div className="mt-0.5 flex items-center gap-2">
+                    <span className={`pill ${chip.cls} !text-[10px] !px-1.5 !py-0`}>{chip.label}</span>
+                    {v?.last_detection && (
+                      <span className="text-[10px] text-faint">{ageOf(v.last_detection)}</span>
+                    )}
+                  </div>
                 </button>
               );
             })}
@@ -423,8 +443,45 @@ export function StrategyLabView() {
 
         {/* CHART + DETAILS */}
         <div className="space-y-3">
-          <div className="card p-2">
-            <div ref={containerRef} className="h-[440px] w-full" />
+          <div className="card overflow-hidden">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-line-subtle px-4 py-2.5">
+              <div className="flex items-center gap-2">
+                <span className="num text-[13px] font-bold tracking-tight text-ink">XAU/USD</span>
+                <span className="rounded bg-black/[0.04] px-1.5 py-0.5 text-[9.5px] font-semibold uppercase tracking-wider text-faint dark:bg-white/[0.06]">
+                  spot
+                </span>
+                <span className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-up">
+                  <span className="relative flex h-1.5 w-1.5">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-up opacity-60" />
+                    <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-up" />
+                  </span>
+                  live
+                </span>
+              </div>
+              <div className="ml-auto flex rounded-lg border border-line-subtle bg-black/[0.03] p-0.5 dark:bg-white/[0.04]">
+                {TIMEFRAMES.map((t) => (
+                  <button
+                    key={t.interval}
+                    onClick={() => setTf(t.interval)}
+                    className={`rounded-md px-2.5 py-1 text-[11.5px] font-semibold transition-all ${
+                      tf === t.interval
+                        ? "bg-gold-dim text-gold shadow-sm"
+                        : "text-faint hover:text-ink"
+                    }`}
+                  >
+                    {t.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div ref={containerRef} className="h-[480px] w-full" />
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 border-t border-line-subtle px-4 py-2 text-[10.5px] text-faint">
+              <span className="flex items-center gap-1"><span className="text-up">▲</span> buy signal</span>
+              <span className="flex items-center gap-1"><span className="text-down">▼</span> sell signal</span>
+              <span className="flex items-center gap-1"><span className="text-gold">╌</span> strategy level</span>
+              <span className="flex items-center gap-1"><span className="text-down">╌</span> stop / invalidation</span>
+              <span className="ml-auto hidden sm:inline">70+ indicators · right-click the chart</span>
+            </div>
           </div>
 
           {/* OUTCOME / DETAIL PANEL */}
@@ -446,9 +503,17 @@ export function StrategyLabView() {
               </div>
 
               {selVerdict && (
-                <div className="mt-3 rounded-xl border border-line-subtle bg-raised p-3.5">
-                  <div className="text-[11.5px] text-muted">How confident is this strategy right now?</div>
-                  <div className="mt-1.5 text-[13.5px] font-semibold text-ink">
+                <div
+                  className={`mt-3 rounded-xl border-l-4 bg-raised p-3.5 ${
+                    selVerdict.verdict === "BULLISH"
+                      ? "border-l-up"
+                      : selVerdict.verdict === "BEARISH"
+                        ? "border-l-down"
+                        : "border-l-warn"
+                  } border border-line-subtle`}
+                >
+                  <div className="text-[11px] uppercase tracking-wider text-faint">Current stance</div>
+                  <div className="mt-1 text-[13.5px] font-semibold text-ink">
                     {selVerdict.signal_status === "CONFIRMED"
                       ? "CONFIRMED — all its conditions are met on the live chart."
                       : selVerdict.signal_status === "WAITING"
@@ -468,7 +533,7 @@ export function StrategyLabView() {
               {selVerdict && (
                 <div className="mt-3 grid gap-3 sm:grid-cols-2">
                   <div className="rounded-xl border border-line-subtle bg-raised p-3.5">
-                    <div className="text-[11.5px] text-muted">What it means</div>
+                    <div className="text-[11px] font-semibold uppercase tracking-wider text-faint">What it means</div>
                     <ul className="mt-1.5 space-y-1.5">
                       {(selVerdict.evidence.length
                         ? selVerdict.evidence
@@ -490,8 +555,8 @@ export function StrategyLabView() {
                     )}
                   </div>
                   <div className="rounded-xl border border-line-subtle bg-raised p-3.5">
-                    <div className="text-[11.5px] text-muted">
-                      Signals on the {tf} chart
+                    <div className="text-[11px] font-semibold uppercase tracking-wider text-faint">
+                      Recent signals · {tf}
                     </div>
                     {selectedDetections.length ? (
                       <ul className="mt-1.5 space-y-2">
