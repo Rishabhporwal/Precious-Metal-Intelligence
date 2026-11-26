@@ -2,17 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { fmtUaeDateTime } from "@/lib/time";
-import {
-  CandlestickSeries,
-  LineSeries,
-  createChart,
-  createSeriesMarkers,
-  type IChartApi,
-  type ISeriesApi,
-  type SeriesMarker,
-  type Time,
-  type UTCTimestamp,
-} from "lightweight-charts";
+import { Vela } from "@luxalgo/vela";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
@@ -47,13 +37,94 @@ interface Detection {
   evidence: string[];
 }
 
-interface Candle {
-  market_ts: string;
-  open: string;
-  high: string;
-  low: string;
-  close: string;
+/* ------------------------------------------------------------------ */
+/* Vela timeframe map + custom provider over our own candle API        */
+/* ------------------------------------------------------------------ */
+
+const VELA_TF: Record<string, string> = {
+  "1h": "60",
+  "4h": "240",
+  "1day": "1D",
+};
+
+interface PmiBar {
+  time: number; // epoch ms, bar OPEN time
+  open: number;
+  high: number;
+  low: number;
+  close: number;
 }
+
+function makePmiProvider() {
+  const cache = new Map<string, PmiBar[]>();
+  return {
+    async getBars(ticker: string, timeframe: string, range?: { from?: number; to?: number; limit?: number }) {
+      const interval = ticker === "XAUUSD" ? tfToInterval(timeframe) : null;
+      if (!interval) return [];
+      const limit = Math.min(range?.limit ?? 500, 1000);
+      const bars = await loadBars(interval, limit);
+      cache.set(`${interval}`, bars);
+      let out = bars;
+      if (range?.from != null) out = bars.filter((b) => b.time >= range.from!);
+      if (range?.to != null) out = out.filter((b) => b.time <= range.to!);
+      return out;
+    },
+    async listSymbols() {
+      return [{ ticker: "XAUUSD", description: "Gold spot / US dollar", type: "forex" }];
+    },
+    async getSymbolInfo(ticker: string) {
+      if (ticker !== "XAUUSD") return undefined;
+      return {
+        ticker,
+        timezone: "Etc/UTC",
+        session: "24x7",
+        volume: false,
+        timeframes: { finest: "60", default: "60", list: ["60", "240", "1D"] },
+      };
+    },
+  };
+}
+
+function tfToInterval(tf: string): string | null {
+  switch (tf) {
+    case "60":
+      return "1h";
+    case "240":
+      return "4h";
+    case "1D":
+      return "1day";
+    default:
+      return null;
+  }
+}
+
+async function loadBars(interval: string, limit: number): Promise<PmiBar[]> {
+  const res = await fetch(
+    `${API_URL}/api/v1/markets/XAUUSD/candles?interval=${interval}&limit=${limit}`,
+  );
+  if (!res.ok) throw new Error("candles unavailable");
+  const d = (await res.json()) as {
+    candles: { market_ts: string; open: string; high: string; low: string; close: string }[];
+  };
+  const seen = new Set<number>();
+  const bars: PmiBar[] = [];
+  for (const c of d.candles) {
+    const time = new Date(c.market_ts).getTime();
+    if (seen.has(time)) continue;
+    seen.add(time);
+    bars.push({
+      time,
+      open: Number(c.open),
+      high: Number(c.high),
+      low: Number(c.low),
+      close: Number(c.close),
+    });
+  }
+  bars.sort((a, b) => a.time - b.time);
+  return bars;
+}
+
+/* ------------------------------------------------------------------ */
 
 const TIMEFRAMES = [
   { interval: "1h", label: "1H" },
@@ -61,11 +132,6 @@ const TIMEFRAMES = [
   { interval: "1day", label: "1D" },
 ] as const;
 type Tf = (typeof TIMEFRAMES)[number]["interval"];
-
-const EMA_DEFS = [
-  { key: "ema20", label: "EMA 20", color: "#60a5fa" },
-  { key: "ema50", label: "EMA 50", color: "#f59e0b" },
-];
 
 function verdictChip(v: string | undefined): { label: string; cls: string } {
   switch (v) {
@@ -92,16 +158,10 @@ const ageOf = (ts: string | null): string => {
   return `${Math.round(mins / 1440)}d ago`;
 };
 
-const epoch = (ts: string): UTCTimestamp =>
-  Math.floor(new Date(ts).getTime() / 1000) as UTCTimestamp;
-
 export function StrategyLabView() {
   const containerRef = useRef<HTMLDivElement>(null);
-  const chartRef = useRef<IChartApi | null>(null);
-  const candleRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
-  const emaRefs = useRef<Record<string, ISeriesApi<"Line">>>({});
-  const markersRef = useRef<ReturnType<typeof createSeriesMarkers<Time>> | null>(null);
-  const priceLinesRef = useRef<ReturnType<ISeriesApi<"Candlestick">["createPriceLine"]>[]>([]);
+  const chartRef = useRef<Vela | null>(null);
+  const overlayIdsRef = useRef<string[]>([]);
 
   const [tf, setTf] = useState<Tf>("1h");
   const [strategies, setStrategies] = useState<StrategyInfo[]>([]);
@@ -116,113 +176,53 @@ export function StrategyLabView() {
   const [search, setSearch] = useState("");
   const [error, setError] = useState<string | null>(null);
 
-  /* ---------------- chart lifecycle ---------------- */
+  /* ---------------- chart lifecycle (mounts once) ---------------- */
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
-    const css = () => getComputedStyle(document.documentElement);
-    const chart = createChart(el, {
-      layout: {
-        background: { color: "transparent" },
-        textColor: css().getPropertyValue("--chart-text").trim() || "#6d7480",
-        fontFamily: "var(--font-geist-mono), monospace",
-        fontSize: 11,
-        attributionLogo: false,
-      },
-      grid: {
-        vertLines: { color: css().getPropertyValue("--chart-grid").trim() },
-        horzLines: { color: css().getPropertyValue("--chart-grid").trim() },
-      },
-      width: el.clientWidth,
-      height: 440,
-      timeScale: { borderColor: css().getPropertyValue("--line").trim(), timeVisible: true },
-      rightPriceScale: { borderColor: css().getPropertyValue("--line").trim() },
-      crosshair: {
-        vertLine: { color: "rgba(199,143,10,0.4)", labelBackgroundColor: "#b8860b" },
-        horzLine: { color: "rgba(199,143,10,0.4)", labelBackgroundColor: "#b8860b" },
-      },
+    let disposed = false;
+    const chart = new Vela(el, {
+      symbol: "XAUUSD",
+      timeframe: VELA_TF["1h"],
+      theme: "dark",
+      bars: 400,
     });
     chartRef.current = chart;
-    const candles = chart.addSeries(CandlestickSeries, {
-      upColor: css().getPropertyValue("--chart-up").trim() || "#059669",
-      downColor: css().getPropertyValue("--chart-down").trim() || "#e11d48",
-      borderVisible: false,
-      wickUpColor: css().getPropertyValue("--chart-up").trim() || "#059669",
-      wickDownColor: css().getPropertyValue("--chart-down").trim() || "#e11d48",
-    });
-    candleRef.current = candles;
-    markersRef.current = createSeriesMarkers(candles, []);
-    for (const def of EMA_DEFS) {
-      emaRefs.current[def.key] = chart.addSeries(LineSeries, {
-        color: def.color,
-        lineWidth: 1,
-        priceLineVisible: false,
-        lastValueVisible: false,
-        crosshairMarkerVisible: false,
-      });
-    }
-    const observer = new ResizeObserver(() => chart.applyOptions({ width: el.clientWidth }));
-    observer.observe(el);
-    // click a marker → focus that detection (refs: chart mounts ONCE)
-    chart.subscribeClick((param) => {
-      const t = param.time as UTCTimestamp | undefined;
-      const sel = selectedRef.current;
-      if (t == null || !sel) return;
-      const clicked = detectionsRef.current
-        .filter((d) => d.strategy_id === sel)
-        .find((d) => epoch(d.anchor_time) === t);
-      if (clicked) setFocused(clicked);
+    chart.drawings.showToolbar(false); // our overlays only — no user drawing chrome
+    chart.data.registerProvider("pmi", makePmiProvider());
+    chart.ready().catch(() => {
+      if (!disposed) setError("Could not load candles — the data service may be restarting.");
     });
     return () => {
-      observer.disconnect();
-      chart.remove();
+      disposed = true;
+      overlayIdsRef.current = [];
       chartRef.current = null;
-      candleRef.current = null;
-      markersRef.current = null;
+      try {
+        chart.destroy?.();
+      } catch {
+        /* older builds expose .remove() */
+        try {
+          (chart as unknown as { remove?: () => void }).remove?.();
+        } catch {
+          /* ignore */
+        }
+      }
     };
   }, []);
+
+  /* ---------------- timeframe change → reload via provider ---------------- */
+  useEffect(() => {
+    const chart = chartRef.current;
+    if (!chart) return;
+    (chart as unknown as { setMarket?: (s: { symbol: string; timeframe: string }) => void }).setMarket?.({
+      symbol: "XAUUSD",
+      timeframe: VELA_TF[tf],
+    });
+  }, [tf]);
 
   /* ---------------- data loading ---------------- */
   useEffect(() => {
     let cancelled = false;
-    const candleEl = candleRef.current;
-    if (!candleEl) return;
-    fetch(`${API_URL}/api/v1/markets/XAUUSD/candles?interval=${tf}&limit=400`)
-      .then((r) => (r.ok ? r.json() : Promise.reject(new Error("candles unavailable"))))
-      .then((d: { candles: Candle[] }) => {
-        if (cancelled) return;
-        candleEl.setData(
-          d.candles.map((c) => ({
-            time: epoch(c.market_ts),
-            open: Number(c.open),
-            high: Number(c.high),
-            low: Number(c.low),
-            close: Number(c.close),
-          })),
-        );
-        chartRef.current?.timeScale().fitContent();
-      })
-      .catch(() => setError("Could not load candles — the data service may be restarting."));
-
-    fetch(`${API_URL}/api/v1/markets/XAUUSD/indicators?interval=${tf}`)
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => {
-        if (cancelled || !d) return;
-        const tail = d.series_tail ?? {};
-        for (const def of EMA_DEFS) {
-          const series = tail[def.key] ?? [];
-          emaRefs.current[def.key]?.setData(
-            series
-              .filter((p: { value: number | null }) => p.value != null)
-              .map((p: { time: string; value: number }) => ({
-                time: epoch(p.time),
-                value: p.value,
-              })),
-          );
-        }
-      })
-      .catch(() => undefined);
-
     fetch(`${API_URL}/api/v1/strategies/detections?symbol=XAUUSD&interval=${tf}&limit=400`)
       .then((r) => (r.ok ? r.json() : { detections: [] }))
       .then((d) => !cancelled && setDetections(d.detections ?? []))
@@ -247,7 +247,6 @@ export function StrategyLabView() {
         for (const ver of v.verdicts ?? []) map[ver.strategy_id] = ver;
         setVerdicts(map);
         if (!cancelled && (s.strategies ?? []).length && !selected) {
-          // preselect the most interesting strategy: a bullish/bearish verdict, else first
           const first = (s.strategies as StrategyInfo[]).find((x) => {
             const ver = map[x.strategy_id];
             return ver?.verdict === "BULLISH" || ver?.verdict === "BEARISH";
@@ -262,58 +261,81 @@ export function StrategyLabView() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  /* ---------------- markers + price lines for the selected strategy ---------------- */
+  /* ---------------- markers + level lines for the selected strategy ---------------- */
   const selectedDetections = useMemo(
     () => detections.filter((d) => d.strategy_id === selected),
     [detections, selected],
   );
 
   useEffect(() => {
-    const candles = candleRef.current;
-    const markersApi = markersRef.current;
-    if (!candles || !markersApi) return;
-    // clear old price lines
-    for (const line of priceLinesRef.current) candles.removePriceLine(line);
-    priceLinesRef.current = [];
-    if (!selected) {
-      markersApi.setMarkers([]);
-      return;
+    const chart = chartRef.current;
+    if (!chart) return;
+    const drawings = (
+      chart as unknown as {
+        drawings: {
+          add: (type: string, spec: Record<string, unknown>) => { id: string } | null;
+          remove: (id: string) => void;
+          lock: (id: string) => void;
+          clear: () => void;
+        };
+      }
+    ).drawings;
+
+    // clear previous overlay group
+    for (const id of overlayIdsRef.current) {
+      try {
+        drawings.remove(id);
+      } catch {
+        /* already gone */
+      }
     }
-    const markers: SeriesMarker<Time>[] = selectedDetections.map((d) => ({
-      time: epoch(d.anchor_time),
-      position: d.direction === "bullish" ? "belowBar" : "aboveBar",
-      shape: d.direction === "bullish" ? "arrowUp" : d.direction === "bearish" ? "arrowDown" : "circle",
-      color: d.direction === "bullish" ? "#10b981" : d.direction === "bearish" ? "#f6465d" : "#9ca3af",
-      text: d.direction === "bullish" ? "Buy signal" : d.direction === "bearish" ? "Sell signal" : "",
-      size: 1,
-    }));
-    markersApi.setMarkers(markers);
-    if (markers.length) {
-      const times = markers.map((m) => m.time as number);
-      chartRef.current?.timeScale().setVisibleLogicalRange({
-        from: Math.max(0, times.length - 60),
-        to: times.length + 12,
+    overlayIdsRef.current = [];
+
+    const addLocked = (type: string, spec: Record<string, unknown>) => {
+      const d = drawings.add(type, spec);
+      if (d?.id) {
+        try {
+          drawings.lock(d.id);
+        } catch {
+          /* lock unsupported — cosmetic only */
+        }
+        overlayIdsRef.current.push(d.id);
+      }
+    };
+
+    const ms = (ts: string) => new Date(ts).getTime();
+
+    // detection arrows
+    for (const d of selectedDetections.slice(-60)) {
+      const price = Object.values(d.levels).find((v) => typeof v === "number") ?? null;
+      addLocked(d.direction === "bullish" ? "arrowmarkup" : "arrowmarkdown", {
+        paneId: "price",
+        anchors: [{ time: ms(d.anchor_time), price: price ?? undefined }],
       });
     }
-    // levels of the latest detection as horizontal lines
-    const latest = selectedDetections[0];
+
+    // latest detection's levels as horizontal lines
+    const latest = selectedDetections[selectedDetections.length - 1];
+    const lastTime = detectionsRef.current.length ? ms(latest?.anchor_time ?? new Date().toISOString()) : Date.now();
     if (latest) {
-      const labels: [string, number, string][] = Object.entries(latest.levels)
+      const labels: [string, number][] = Object.entries(latest.levels)
         .filter(([, v]) => typeof v === "number")
         .filter(([k]) => !k.startsWith("ema"))
         .slice(0, 3)
-        .map(([k, v]) => [k, v as number, ""]);
-      for (const [key, value, title] of labels) {
-        priceLinesRef.current.push(
-          candles.createPriceLine({
-            price: value,
-            color: key.includes("stop") || key.includes("invalid") ? "#f6465d" : "#b8860b",
-            lineWidth: 1,
-            lineStyle: 2,
-            axisLabelVisible: true,
-            title: title || key.replace(/_/g, " "),
-          }),
-        );
+        .map(([k, v]) => [k, v as number]);
+      for (const [key, value] of labels) {
+        addLocked("hline", {
+          paneId: "price",
+          anchors: [{ time: lastTime, price: value }],
+          props: {
+            style: {
+              lineColor: key.includes("stop") || key.includes("invalid") ? "#f6465d" : "#b8860b",
+              lineWidth: 1,
+              lineStyle: "dashed",
+            },
+            label: key.replace(/_/g, " "),
+          },
+        });
       }
     }
   }, [selected, selectedDetections]);
@@ -402,7 +424,7 @@ export function StrategyLabView() {
         {/* CHART + DETAILS */}
         <div className="space-y-3">
           <div className="card p-2">
-            <div ref={containerRef} className="w-full" />
+            <div ref={containerRef} className="h-[440px] w-full" />
           </div>
 
           {/* OUTCOME / DETAIL PANEL */}
@@ -469,7 +491,7 @@ export function StrategyLabView() {
                   </div>
                   <div className="rounded-xl border border-line-subtle bg-raised p-3.5">
                     <div className="text-[11.5px] text-muted">
-                      Signals on the {tf} chart — click an arrow on the chart to inspect it
+                      Signals on the {tf} chart
                     </div>
                     {selectedDetections.length ? (
                       <ul className="mt-1.5 space-y-2">

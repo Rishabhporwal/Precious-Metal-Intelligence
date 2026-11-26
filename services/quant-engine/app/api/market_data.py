@@ -135,6 +135,37 @@ def backfill(symbol: str, req: BackfillRequest) -> dict:
     }
 
 
+
+
+def _aggregate_4h(hourly: list, limit: int) -> list:
+    """Fold 1h candles into deterministic 4h buckets (00/04/08/... UTC)."""
+    out: list = []
+    bucket: list = []
+    for r in hourly:
+        ts = r["market_ts"]
+        if bucket and (ts.hour % 4 == 0 or (ts - bucket[-1]["market_ts"]).total_seconds() >= 4 * 3600):
+            out.append(_merge_bucket(bucket))
+            bucket = []
+        bucket.append(r)
+    if bucket:
+        out.append(_merge_bucket(bucket))
+    return out[-limit:]
+
+
+def _merge_bucket(bucket: list) -> dict:
+    first, last = bucket[0], bucket[-1]
+    return {
+        "market_ts": first["market_ts"],
+        "open": first["open"],
+        "high": max(r["high"] for r in bucket),
+        "low": min(r["low"] for r in bucket),
+        "close": last["close"],
+        "volume": None,
+        "volume_type": "none",
+        "candle_status": "aggregated",
+    }
+
+
 @router.get("/instruments/{symbol}/candles")
 def candles(
     symbol: str,
@@ -148,6 +179,11 @@ def candles(
         if instrument is None:
             raise HTTPException(status_code=404, detail=f"unknown instrument {symbol}")
         rows = store.get_candles(conn, instrument["id"], interval, limit=limit, start=start, end=end)
+        # 4h is never stored (ingestion polls 1m/1h/1day) — aggregate it
+        # deterministically from stored 1h candles so the chart's 4H view works
+        if interval == CandleInterval.HOUR_4 and not rows:
+            hourly = store.get_candles(conn, instrument["id"], CandleInterval.HOUR_1, limit=limit * 4)
+            rows = _aggregate_4h(hourly, limit)
     return {
         "symbol": symbol,
         "interval": interval.value,
