@@ -5,6 +5,7 @@ from pydantic import BaseModel
 from .api import (
     analyst,
     backtests,
+    crypto_ep,
     dataquality_ep,
     intelligence,
     macro,
@@ -39,6 +40,7 @@ app.include_router(signals.router)
 app.include_router(intelligence.router)
 app.include_router(missed_ep.router)
 app.include_router(predictions_ep.router)
+app.include_router(crypto_ep.router)
 app.include_router(news_events_ep.router)
 app.include_router(backtests.router)
 app.include_router(dataquality_ep.router)

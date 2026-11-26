@@ -138,6 +138,21 @@ export async function registerMarketRoutes(app: FastifyInstance): Promise<void> 
     return reply.code(result.statusCode).send(result.body);
   });
 
+  app.get("/api/v1/crypto/overview", async (_request, reply) => {
+    const result = await proxy(app, "/v1/crypto/overview");
+    return reply.code(result.statusCode).send(result.body);
+  });
+
+  app.get<{ Querystring: { symbol?: string; limit?: string } }>(
+    "/api/v1/crypto/candles",
+    async (request, reply) => {
+      const symbol = ((request.query?.symbol as string) ?? "BTC").toUpperCase();
+      const limit = Number(request.query?.limit ?? 120) || 120;
+      const result = await proxy(app, `/v1/crypto/candles?symbol=${symbol}&limit=${limit}`);
+      return reply.code(result.statusCode).send(result.body);
+    },
+  );
+
   app.get("/api/v1/strategies", async (_request, reply) => {
     const result = await proxy(app, "/v1/strategies");
     return reply.code(result.statusCode).send(result.body);

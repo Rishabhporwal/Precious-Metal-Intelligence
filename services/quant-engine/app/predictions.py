@@ -202,7 +202,6 @@ def audit_summary(symbol: str = "XAUUSD") -> dict:
         "hit_t1": counts.get("hit_t1", 0),
         "hit_t2": counts.get("hit_t2", 0),
         "stopped": counts.get("stopped", 0),
-        "superseded": counts.get("superseded", 0),
         "expired": counts.get("expired", 0),
         "t1_hit_rate": round(t1_rate, 2) if t1_rate is not None else None,
     }

@@ -21,6 +21,7 @@ from typing import TYPE_CHECKING
 from app.db import get_pool
 from app.marketdata import store
 from app.marketdata.provider_factory import load_provider
+from ingestion import crypto
 from providers.base import CandleInterval
 
 if TYPE_CHECKING:
@@ -202,6 +203,11 @@ def run() -> None:
     last_candle_poll = 0.0
     last_hourly_poll = 0.0
     last_daily_poll = 0.0  # refresh immediately on first loop pass
+    last_crypto_candles = 0.0
+    last_crypto_deriv = 0.0
+    CRYPTO_CANDLES_SECONDS = int(os.environ.get("CRYPTO_CANDLES_SECONDS", "900"))   # 15 min, 3w
+    CRYPTO_DERIV_SECONDS = int(os.environ.get("CRYPTO_DERIV_SECONDS", "1800"))      # 30 min, 9w
+
     # Credit budget (free plan 800/day, gold only): quotes 288 + 1min 96 +
     # hourly refresh 48 + daily refresh 4 ≈ 436/day — leaves ~45% headroom.
     HOURLY_POLL_SECONDS = int(os.environ.get("HOURLY_POLL_SECONDS", "1800"))
@@ -270,6 +276,17 @@ def run() -> None:
             if do_daily:
                 last_daily_poll = time.monotonic()
                 _log_staleness(instruments)
+        # --- crypto order flow (BTC/ETH/SOL, OpenMarket free tier) ---
+        now_mono = time.monotonic()
+        try:
+            if now_mono - last_crypto_candles >= CRYPTO_CANDLES_SECONDS:
+                last_crypto_candles = now_mono
+                crypto.sync_candles()
+            if now_mono - last_crypto_deriv >= CRYPTO_DERIV_SECONDS:
+                last_crypto_deriv = now_mono
+                crypto.sync_deriv()
+        except Exception as exc:  # noqa: BLE001 — crypto must never break gold ingestion
+            logger.warning("crypto sync failed: %s", exc)
         else:
             logger.info("no enabled instruments yet — idling")
         # sleep until next quote poll, remaining responsive to shutdown
